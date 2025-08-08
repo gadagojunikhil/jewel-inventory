@@ -21,15 +21,23 @@ A comprehensive jewelry inventory management application built for Mac.
 3. Start managing your jewelry inventory
 
 ## Project Structure
+## Project Structure
+
 jewel-inventory/
-├── index.html          # Main dashboard
-├── inventory.html      # Inventory management
-├── reports.html        # Reports and analytics
-├── assets/
-│   ├── css/           # Stylesheets
-│   ├── js/            # JavaScript files
-│   └── images/        # Image assets
-└── data/              # Local data storage
+├── public/
+│   └── index.html                 # HTML entry point
+├── src/
+│   ├── App.js                     # Main React component
+│   ├── index.js                   # React DOM rendering
+│   ├── components/
+│   │   ├── admin/
+│   │   │   └── CategoryManagement.js   # Admin category management UI
+│   │   └── inventory/
+│   │       └── UploadInventory.js     # Inventory upload functionality
+├── package.json                   # Project metadata and dependencies
+├── package-lock.json              # Dependency lock file
+└── README.md                      # Project documentation
+
 
 ## Development Status
 - ✅ Basic inventory management
