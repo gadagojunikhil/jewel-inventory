@@ -10,7 +10,7 @@ import React, { useState, useEffect } from 'react';
 // import ViewInventory from './components/inventory/ViewInventory';
 // import AddInventory from './components/inventory/AddInventory';
 // import EditInventory from './components/inventory/EditInventory';
-// import UploadJewelry from './components/inventory/UploadJewelry';
+ import UploadJewelry from './components/inventory/UploadJewelry';
 
 // Billing Components (Not created yet)
 // import IndianBilling from './components/billing/IndianBilling';
@@ -338,7 +338,7 @@ const App = () => {
         return <PlaceholderComponent title="Edit Inventory" />;
       
       case 'upload-jewelry':
-        return <PlaceholderComponent title="Upload Jewelry" />;
+        return <UploadJewelry />;
 
       case 'indian-billing':
         return <PlaceholderComponent title="Indian Billing" />;
