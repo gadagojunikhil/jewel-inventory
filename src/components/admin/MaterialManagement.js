@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Gem, Search } from 'lucide-react';
+import api from '../../services/api';
 
 const MaterialManagement = ({ materials, setMaterials }) => {
   const [showAddMaterialForm, setShowAddMaterialForm] = useState(false);
@@ -22,38 +23,69 @@ const MaterialManagement = ({ materials, setMaterials }) => {
     salePrice: 0,
     unit: 'each'
   });
+// localStorage operations with:
+useEffect(() => {
+  loadMaterials();
+}, []);
 
+const loadMaterials = async () => {
+  try {
+    const data = await api.getMaterials();
+    setMaterials(data);
+  } catch (error) {
+    console.error('Failed to load materials:', error);
+  }
+};
+
+const saveMaterial = async (materialData) => {
+  try {
+    if (editingMaterial) {
+      await api.updateMaterial(editingMaterial.id, materialData);
+    } else {
+      await api.createMaterial(materialData);
+    }
+    await loadMaterials(); // Reload
+  } catch (error) {
+    console.error('Failed to save material:', error);
+  }
+};
+
+const deleteMaterial = async (id) => {
+  try {
+    await api.deleteMaterial(id);
+    await loadMaterials(); // Reload
+  } catch (error) {
+    console.error('Failed to delete material:', error);
+  }
+};
   const categories = ['Diamond', 'Stone', 'Gold', 'Silver', 'Platinum', 'Other'];
   const units = ['each', 'gram', 'carat', 'piece', 'ounce', 'kilogram'];
 
-  const handleAddMaterial = () => {
+  const handleAddMaterial = async () => {
     if (newMaterial.name && newMaterial.code) {
       // Check if code already exists
       const codeExists = materials.some(material => 
         material.code.toLowerCase() === newMaterial.code.toLowerCase()
       );
-      
       if (codeExists) {
         alert('Material code already exists. Please use a different code.');
         return;
       }
-
-      const newId = Math.max(...materials.map(m => m.id), 0) + 1;
-      const materialToAdd = { 
-        ...newMaterial, 
-        id: newId,
-        createdDate: new Date().toISOString()
-      };
-      setMaterials(prev => [...prev, materialToAdd]);
-      setNewMaterial({
-        category: 'Diamond',
-        name: '',
-        code: '',
-        costPrice: 0,
-        salePrice: 0,
-        unit: 'each'
-      });
-      setShowAddMaterialForm(false);
+      try {
+        await api.createMaterial(newMaterial);
+        await loadMaterials();
+        setShowAddMaterialForm(false);
+        setNewMaterial({
+          category: 'Diamond',
+          name: '',
+          code: '',
+          costPrice: 0,
+          salePrice: 0,
+          unit: 'each'
+        });
+      } catch (error) {
+        alert('Failed to add material');
+      }
     }
   };
 
@@ -62,35 +94,32 @@ const MaterialManagement = ({ materials, setMaterials }) => {
     setEditingMaterial({ ...material });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingMaterial.name && editingMaterial.code) {
       // Check if code already exists (excluding current material)
       const codeExists = materials.some(material => 
         material.id !== editingMaterialId && 
         material.code.toLowerCase() === editingMaterial.code.toLowerCase()
       );
-      
       if (codeExists) {
         alert('Material code already exists. Please use a different code.');
         return;
       }
-
-      setMaterials(prev => 
-        prev.map(material => 
-          material.id === editingMaterialId 
-            ? { ...editingMaterial, id: editingMaterialId, updatedDate: new Date().toISOString() }
-            : material
-        )
-      );
-      setEditingMaterialId(null);
-      setEditingMaterial({
-        category: 'Diamond',
-        name: '',
-        code: '',
-        costPrice: 0,
-        salePrice: 0,
-        unit: 'each'
-      });
+      try {
+        await api.updateMaterial(editingMaterialId, editingMaterial);
+        await loadMaterials();
+        setEditingMaterialId(null);
+        setEditingMaterial({
+          category: 'Diamond',
+          name: '',
+          code: '',
+          costPrice: 0,
+          salePrice: 0,
+          unit: 'each'
+        });
+      } catch (error) {
+        alert('Failed to update material');
+      }
     }
   };
 
@@ -106,11 +135,15 @@ const MaterialManagement = ({ materials, setMaterials }) => {
     });
   };
 
-  const handleDeleteMaterial = (id) => {
+  const handleDeleteMaterial = async (id) => {
     const material = materials.find(m => m.id === id);
-    
     if (window.confirm(`Are you sure you want to delete material "${material.name}" (${material.code})?`)) {
-      setMaterials(prev => prev.filter(m => m.id !== id));
+      try {
+        await api.deleteMaterial(id);
+        await loadMaterials();
+      } catch (error) {
+        alert('Failed to delete material');
+      }
     }
   };
 

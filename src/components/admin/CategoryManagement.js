@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Package, ChevronDown, ChevronRight, Gem, Award } from 'lucide-react';
+import api from '../../services/api';
 
 const CategoryManagement = ({
   jewelryCategories,
@@ -39,7 +40,41 @@ const CategoryManagement = ({
   const getChildCategories = (parentId) => {
     return jewelryCategories.filter(cat => cat.parentId === parentId);
   };
+  // localStorage operations with:
+useEffect(() => {
+  loadCategories();
+}, []);
 
+const loadCategories = async () => {
+  try {
+    const data = await api.getCategories();
+    setJewelryCategories(data);
+  } catch (error) {
+    console.error('Failed to load categories:', error);
+  }
+};
+
+const saveCategory = async (categoryData) => {
+  try {
+    if (editingCategory) {
+      await api.updateCategory(editingCategory.id, categoryData);
+    } else {
+      await api.createCategory(categoryData);
+    }
+    await loadCategories(); // Reload
+  } catch (error) {
+    console.error('Failed to save category:', error);
+  }
+};
+
+const deleteCategory = async (id) => {
+  try {
+    await api.deleteCategory(id);
+    await loadCategories(); // Reload
+  } catch (error) {
+    console.error('Failed to delete category:', error);
+  }
+};
   // Toggle expansion of parent category
   const toggleExpansion = (categoryId) => {
     const newExpanded = new Set(expandedCategories);
@@ -51,7 +86,7 @@ const CategoryManagement = ({
     setExpandedCategories(newExpanded);
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     // For parent categories, only name is required
     // For child categories, both name and code are required
     const isValid = categoryType === 'parent'
@@ -70,27 +105,31 @@ const CategoryManagement = ({
           return;
         }
       }
-
-      const newId = Math.max(...jewelryCategories.map(c => c.id), 0) + 1;
-      const categoryToAdd = {
-        ...newCategory,
-        id: newId,
-        type: categoryType,
-        parentId: categoryType === 'child' ? newCategory.parentId : null,
-        code: categoryType === 'parent' ? null : newCategory.code // No code for parents
-      };
-      setJewelryCategories(prev => [...prev, categoryToAdd]);
-      setNewCategory({
-        name: '',
-        code: '',
-        description: '',
-        wastageCharges: 0,
-        makingCharges: 0,
-        parentId: null,
-        type: 'parent'
-      });
-      setCategoryType('parent');
-      setShowAddCategoryForm(false);
+      try {
+        const categoryToAdd = {
+          ...newCategory,
+          type: categoryType,
+          parentId: categoryType === 'child' ? newCategory.parentId : null,
+          code: categoryType === 'parent' ? null : newCategory.code // No code for parents
+        };
+        await api.createCategory(categoryToAdd);
+        // Reload categories from backend
+        const updatedCategories = await api.getCategories();
+        setJewelryCategories(updatedCategories);
+        setNewCategory({
+          name: '',
+          code: '',
+          description: '',
+          wastageCharges: 0,
+          makingCharges: 0,
+          parentId: null,
+          type: 'parent'
+        });
+        setCategoryType('parent');
+        setShowAddCategoryForm(false);
+      } catch (error) {
+        alert('Failed to add category.');
+      }
     }
   };
 
@@ -120,7 +159,7 @@ const CategoryManagement = ({
     setEditingCategory({ ...category });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     const isValid = editingCategory.type === 'parent'
       ? editingCategory.name
       : editingCategory.name && editingCategory.code;
@@ -139,28 +178,24 @@ const CategoryManagement = ({
           return;
         }
       }
-
-      setJewelryCategories(prev =>
-        prev.map(cat =>
-          cat.id === editingCategoryId
-            ? {
-              ...editingCategory,
-              id: editingCategoryId,
-              code: editingCategory.type === 'parent' ? null : editingCategory.code
-            }
-            : cat
-        )
-      );
-      setEditingCategoryId(null);
-      setEditingCategory({
-        name: '',
-        code: '',
-        description: '',
-        wastageCharges: 0,
-        makingCharges: 0,
-        parentId: null,
-        type: 'parent'
-      });
+      try {
+        await api.updateCategory(editingCategoryId, editingCategory);
+        // Reload categories from backend
+        const updatedCategories = await api.getCategories();
+        setJewelryCategories(updatedCategories);
+        setEditingCategoryId(null);
+        setEditingCategory({
+          name: '',
+          code: '',
+          description: '',
+          wastageCharges: 0,
+          makingCharges: 0,
+          parentId: null,
+          type: 'parent'
+        });
+      } catch (error) {
+        alert('Failed to update category.');
+      }
     }
   };
 
@@ -177,7 +212,7 @@ const CategoryManagement = ({
     });
   };
 
-  const handleDeleteCategory = (id) => {
+  const handleDeleteCategory = async (id) => {
     const category = jewelryCategories.find(cat => cat.id === id);
 
     // Check if it's a parent with children
@@ -190,7 +225,14 @@ const CategoryManagement = ({
     }
 
     if (window.confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
-      setJewelryCategories(prev => prev.filter(cat => cat.id !== id));
+      try {
+        await api.deleteCategory(id);
+        // Reload categories from backend
+        const updatedCategories = await api.getCategories();
+        setJewelryCategories(updatedCategories);
+      } catch (error) {
+        alert('Failed to delete category.');
+      }
     }
   };
 

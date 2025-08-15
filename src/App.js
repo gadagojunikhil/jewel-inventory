@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import api from './services/api';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './components/auth/Login';
 
 // Only import components that exist - we'll add others gradually
  //Admin Components (These exist if you've created them)
-// import UserManagement from './components/admin/UserManagement';
+import UserManagement from './components/admin/UserManagement';
+import VendorManagement from './components/admin/VendorManagement';
  import MaterialManagement from './components/admin/MaterialManagement';
  import CategoryManagement from './components/admin/CategoryManagement';
 
 // Inventory Components (Create these step by step)
-// import ViewInventory from './components/inventory/ViewInventory';
-// import AddInventory from './components/inventory/AddInventory';
+ import ViewInventory from './components/inventory/ViewInventory';
+import AddInventory from './components/inventory/AddInventory';
 // import EditInventory from './components/inventory/EditInventory';
  import UploadJewelry from './components/inventory/UploadJewelry';
 
@@ -36,7 +40,7 @@ import {
   Plus, Edit2, Trash2, Save, X, Package, Gem, Eye, 
   Users, Settings, FileText, DollarSign, Upload, 
   BarChart3, ChevronDown, Menu, Home, Calculator,
-  Search, Filter
+  Search, Filter, Briefcase
 } from 'lucide-react';
 
 const App = () => {
@@ -50,98 +54,83 @@ const App = () => {
   const [users, setUsers] = useState([]);
   const [jewelryCategories, setJewelryCategories] = useState([]);
 
-  // Keep your existing useEffect for data initialization
+  // Fetch inventory, materials, categories, and users from backend API
+  const fetchJewelry = () => {
+    api.getJewelry()
+      .then(data => {
+        setJewelryPieces(data.items || data);
+      })
+      .catch(err => {
+        console.error('Failed to fetch jewelry pieces:', err);
+      });
+  };
+
+  const fetchMaterials = () => {
+    api.getMaterials()
+      .then(data => {
+        setMaterials(data.items || data);
+      })
+      .catch(err => {
+        console.error('Failed to fetch materials:', err);
+      });
+  };
+
+  const fetchCategories = () => {
+    api.getCategories()
+      .then(data => {
+        setJewelryCategories(data.items || data);
+      })
+      .catch(err => {
+        console.error('Failed to fetch categories:', err);
+      });
+  };
+
+  const fetchUsers = () => {
+    if (api.getUsers) {
+      api.getUsers()
+        .then(data => {
+          setUsers(data.items || data);
+        })
+        .catch(err => {
+          console.error('Failed to fetch users:', err);
+        });
+    }
+  };
+
   useEffect(() => {
-    const savedMaterials = localStorage.getItem('jewelryMaterials');
-    const savedJewelry = localStorage.getItem('jewelryPieces');
-    const savedUsers = localStorage.getItem('jewelryUsers');
-    const savedCategories = localStorage.getItem('jewelryCategories');
-    
-    if (savedMaterials) {
-      setMaterials(JSON.parse(savedMaterials));
-    } else {
-      const defaultMaterials = [
-        { id: 1, category: 'Diamond', name: 'Flat Diamonds', code: 'FD', costPrice: 150, salePrice: 400, unit: 'each' },
-        { id: 2, category: 'Diamond', name: 'Round Diamonds', code: 'RD', costPrice: 200, salePrice: 500, unit: 'each' },
-        { id: 3, category: 'Diamond', name: 'Princess Cut Diamonds', code: 'PD', costPrice: 180, salePrice: 450, unit: 'each' },
-        { id: 4, category: 'Stone', name: 'Ruby', code: 'RU', costPrice: 100, salePrice: 300, unit: 'each' },
-        { id: 5, category: 'Stone', name: 'Sapphire', code: 'SA', costPrice: 80, salePrice: 250, unit: 'each' },
-        { id: 6, category: 'Stone', name: 'Emerald', code: 'EM', costPrice: 120, salePrice: 350, unit: 'each' },
-        { id: 11, category: 'Gold', name: '14K Yellow Gold', code: 'G14-Y', costPrice: 30, salePrice: 45, unit: 'gram' },
-        { id: 14, category: 'Gold', name: '18K Yellow Gold', code: 'G18-Y', costPrice: 40, salePrice: 60, unit: 'gram' },
-        { id: 17, category: 'Gold', name: '22K Yellow Gold', code: 'G22-Y', costPrice: 50, salePrice: 75, unit: 'gram' },
-        { id: 18, category: 'Silver', name: 'Sterling Silver 925', code: 'SS-925', costPrice: 2, salePrice: 3, unit: 'gram' }
-      ];
-      setMaterials(defaultMaterials);
-      localStorage.setItem('jewelryMaterials', JSON.stringify(defaultMaterials));
-    }
-
-    if (savedCategories) {
-      setJewelryCategories(JSON.parse(savedCategories));
-    } else {
-      const defaultCategories = [
-        { id: 1, name: 'Necklace', code: 'N', description: 'All types of necklaces' },
-        { id: 2, name: 'Ring', code: 'R', description: 'All types of rings' },
-        { id: 3, name: 'Earrings', code: 'E', description: 'All types of earrings' },
-        { id: 4, name: 'Bracelet', code: 'B', description: 'All types of bracelets' },
-        { id: 5, name: 'Pendant', code: 'P', description: 'All types of pendants' },
-        { id: 6, name: 'Brooch', code: 'BR', description: 'All types of brooches' }
-      ];
-      setJewelryCategories(defaultCategories);
-      localStorage.setItem('jewelryCategories', JSON.stringify(defaultCategories));
-    }
-
-    if (savedJewelry) {
-      setJewelryPieces(JSON.parse(savedJewelry));
-    } else {
-      const sampleJewelry = [
-        {
-          id: 1,
-          name: 'Diamond Ruby Necklace',
-          code: 'N-001',
-          category: 'Necklace',
-          materials: [
-            { materialId: 14, materialCode: 'G18-Y', materialName: '18K Yellow Gold', quantity: 10, unit: 'gram', costPerUnit: 40, totalCost: 400 },
-            { materialId: 2, materialCode: 'RD', materialName: 'Round Diamonds', quantity: 2.32, unit: 'each', costPerUnit: 200, totalCost: 464 },
-            { materialId: 4, materialCode: 'RU', materialName: 'Ruby', quantity: 1.25, unit: 'each', costPerUnit: 100, totalCost: 125 }
-          ],
-          laborCost: 400,
-          otherCosts: 50,
-          salePrice: 3500,
-          status: 'In Stock',
-          createdDate: new Date().toISOString()
-        },
-        {
-          id: 2,
-          name: 'Diamond Earrings',
-          code: 'E-001',
-          category: 'Earrings',
-          materials: [
-            { materialId: 14, materialCode: 'G18-Y', materialName: '18K Yellow Gold', quantity: 5, unit: 'gram', costPerUnit: 40, totalCost: 200 },
-            { materialId: 2, materialCode: 'RD', materialName: 'Round Diamonds', quantity: 1.5, unit: 'each', costPerUnit: 200, totalCost: 300 }
-          ],
-          laborCost: 250,
-          otherCosts: 25,
-          salePrice: 1800,
-          status: 'In Stock',
-          createdDate: new Date().toISOString()
-        }
-      ];
-      setJewelryPieces(sampleJewelry);
-      localStorage.setItem('jewelryPieces', JSON.stringify(sampleJewelry));
-    }
-
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    } else {
-      const defaultUsers = [
-        { id: 1, name: 'Admin User', email: 'admin@jewelry.com', role: 'Admin', status: 'Active', createdDate: new Date().toISOString() },
-        { id: 2, name: 'Manager User', email: 'manager@jewelry.com', role: 'Manager', status: 'Active', createdDate: new Date().toISOString() }
-      ];
-      setUsers(defaultUsers);
-      localStorage.setItem('jewelryUsers', JSON.stringify(defaultUsers));
-    }
+    fetchJewelry();
+    fetchMaterials();
+    fetchCategories();
+    fetchUsers();
   }, []);
+
+  // CRUD functions for inventory
+  const addJewelryPiece = async (jewelryData) => {
+    try {
+      await api.createJewelry(jewelryData);
+      fetchJewelry();
+    } catch (err) {
+      console.error('Failed to add jewelry piece:', err);
+    }
+  };
+
+  const updateJewelryPiece = async (id, jewelryData) => {
+    try {
+      await api.updateJewelry(id, jewelryData);
+      fetchJewelry();
+    } catch (err) {
+      console.error('Failed to update jewelry piece:', err);
+    }
+  };
+
+  const deleteJewelryPiece = async (id) => {
+    try {
+      await api.deleteJewelry(id);
+      fetchJewelry();
+    } catch (err) {
+      console.error('Failed to delete jewelry piece:', err);
+    }
+  };
 
   // Keep your existing menu items
   const menuItems = [
@@ -150,13 +139,14 @@ const App = () => {
       title: 'Admin',
       submenu: [
         { id: 'user-management', title: 'User Management' },
+        { id: 'vendor-management', title: 'Vendor Management' },
         { id: 'material-management', title: 'Material Management' },
         { id: 'category-management', title: 'Category Management' }
       ]
     },
     {
       id: 'inventory',
-      title: 'Inventory Management',
+      title: 'Inventory',
       submenu: [
         { id: 'view-inventory', title: 'View Inventory' },
         { id: 'add-inventory', title: 'Add Inventory' },
@@ -309,7 +299,9 @@ const App = () => {
       
       // For now, use placeholders - you'll replace these as you create components
       case 'user-management':
-        return <PlaceholderComponent title="User Management" />;
+        return <UserManagement />;
+      case 'vendor-management':
+        return <VendorManagement />;
       
       case 'material-management':
         return (
@@ -329,10 +321,18 @@ const App = () => {
   );
 
       case 'view-inventory':
-        return <PlaceholderComponent title="View Inventory" />;
+         return <ViewInventory />;
       
       case 'add-inventory':
-        return <PlaceholderComponent title="Add Inventory" />;
+        return (
+          <AddInventory
+            jewelryPieces={jewelryPieces}
+            setJewelryPieces={setJewelryPieces}
+            materials={materials}
+            jewelryCategories={jewelryCategories}
+            onAdd={fetchJewelry}
+          />
+        );
       
       case 'edit-inventory':
         return <PlaceholderComponent title="Edit Inventory" />;
@@ -417,6 +417,7 @@ const App = () => {
                       }`}
                     >
                       {subItem.id === 'user-management' && <Users size={16} />}
+                      {subItem.id === 'vendor-management' && <Briefcase size={16} />}
                       {subItem.id === 'material-management' && <Gem size={16} />}
                       {subItem.id === 'category-management' && <Package size={16} />}
                       {subItem.id === 'view-inventory' && <Eye size={16} />}
@@ -462,7 +463,44 @@ const App = () => {
       </div>
     </div>
   );
+const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    
+    if (token && savedUser) {
+      setIsAuthenticated(true);
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    setIsAuthenticated(true);
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    api.logout();
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  // If not authenticated, show login
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Rest of your existing App component
+  return (
+    <AuthProvider>
+      {/* Your existing app content */}
+    </AuthProvider>
+  );
+};
   return (
     <div className="min-h-screen bg-gray-100">
       <Sidebar />

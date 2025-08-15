@@ -29,9 +29,13 @@ const EditInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCate
       type: 'edit',
       data: jewelry,
       message: `Are you sure you want to edit "${jewelry.name}" (${jewelry.code})?`,
-      onConfirm: () => {
-        console.log('Edit jewelry:', jewelry);
+      onConfirm: async () => {
+        // Example: open edit modal or call backend edit API
+        // await api.updateJewelry(jewelry.id, updatedData);
         setShowConfirmDialog(false);
+        // Optionally reload jewelry from backend
+        const updatedJewelry = await api.getJewelry();
+        setJewelryPieces(updatedJewelry);
       }
     });
     setShowConfirmDialog(true);
@@ -42,15 +46,12 @@ const EditInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCate
       type: 'archive',
       data: jewelry,
       message: `Are you sure you want to archive "${jewelry.name}" (${jewelry.code})? This item will be moved to archived inventory but can be restored later.`,
-      onConfirm: () => {
-        setJewelryPieces(prev => 
-          prev.map(j => 
-            j.id === jewelry.id 
-              ? { ...j, status: 'Archived', archivedDate: new Date().toISOString() }
-              : j
-          )
-        );
+      onConfirm: async () => {
+        await api.updateJewelry(jewelry.id, { status: 'Archived', archivedDate: new Date().toISOString() });
         setShowConfirmDialog(false);
+        // Reload jewelry from backend
+        const updatedJewelry = await api.getJewelry();
+        setJewelryPieces(updatedJewelry);
         setSearchResults(prev => prev.filter(j => j.id !== jewelry.id));
       }
     });

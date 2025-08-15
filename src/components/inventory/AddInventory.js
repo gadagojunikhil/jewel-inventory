@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Plus, Save, X, Gem, Trash2 } from 'lucide-react';
+import api from '../../services/api';
 
-const AddInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCategories }) => {
+const AddInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCategories, onAdd }) => {
   const [showAddJewelryForm, setShowAddJewelryForm] = useState(false);
   const [newJewelry, setNewJewelry] = useState({
     name: '',
@@ -65,26 +66,34 @@ const AddInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCateg
     }));
   };
 
-  const handleAddJewelry = () => {
+  const handleAddJewelry = async () => {
     if (newJewelry.name && newJewelry.code) {
-      const newId = Math.max(...jewelryPieces.map(j => j.id), 0) + 1;
-      const jewelryToAdd = {
-        ...newJewelry,
-        id: newId,
-        createdDate: new Date().toISOString()
-      };
-      setJewelryPieces(prev => [...prev, jewelryToAdd]);
-      setNewJewelry({
-        name: '',
-        code: '',
-        category: jewelryCategories[0]?.name || 'Necklace',
-        materials: [],
-        laborCost: 0,
-        otherCosts: 0,
-        salePrice: 0,
-        status: 'In Stock'
-      });
-      setShowAddJewelryForm(false);
+      try {
+        // Prepare data for backend (convert field names if needed)
+        const jewelryToAdd = {
+          ...newJewelry,
+          category: undefined, // Remove frontend-only field if backend expects category_id
+          category_id: jewelryCategories.find(cat => cat.name === newJewelry.category)?.id,
+        };
+        await api.createJewelry(jewelryToAdd);
+        // Reload jewelry pieces from backend
+        const updatedJewelry = await api.getJewelry();
+        setJewelryPieces(updatedJewelry);
+        if (onAdd) onAdd();
+        setNewJewelry({
+          name: '',
+          code: '',
+          category: jewelryCategories[0]?.name || 'Necklace',
+          materials: [],
+          laborCost: 0,
+          otherCosts: 0,
+          salePrice: 0,
+          status: 'In Stock'
+        });
+        setShowAddJewelryForm(false);
+      } catch (err) {
+        alert('Failed to add jewelry: ' + (err.message || err));
+      }
     }
   };
 
@@ -349,3 +358,5 @@ const AddInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCateg
     </div>
   );
 };
+
+export default AddInventory;
