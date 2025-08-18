@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Gem, Search } from 'lucide-react';
-import api from '../../services/api';
+import { useMaterials } from '../../hooks/useApiData';
 
-const MaterialManagement = ({ materials, setMaterials }) => {
+const MaterialManagement = () => {
+  const { 
+    materials, 
+    loading, 
+    error, 
+    addMaterial: apiAddMaterial, 
+    updateMaterial: apiUpdateMaterial, 
+    deleteMaterial: apiDeleteMaterial 
+  } = useMaterials();
   const [showAddMaterialForm, setShowAddMaterialForm] = useState(false);
   const [editingMaterialId, setEditingMaterialId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,75 +31,20 @@ const MaterialManagement = ({ materials, setMaterials }) => {
     salePrice: 0,
     unit: 'each'
   });
-// localStorage operations with:
-useEffect(() => {
-  loadMaterials();
-}, []);
 
-const loadMaterials = async () => {
+  const deleteMaterial = async (id) => {
   try {
-    // Try API first, fallback to localStorage if backend not available
-    const data = await api.getMaterials();
-    setMaterials(data);
+    await apiDeleteMaterial(id);
   } catch (error) {
-    console.error('API not available, using localStorage:', error);
-    // Fallback to localStorage if API fails
-    const savedMaterials = localStorage.getItem('jewelryMaterials');
-    if (savedMaterials) {
-      const localMaterials = JSON.parse(savedMaterials);
-      setMaterials(localMaterials);
-    }
-  }
-};
-
-const saveMaterial = async (materialData) => {
-  try {
-    // Try API first, fallback to localStorage if backend not available
-    if (editingMaterialId) {
-      await api.updateMaterial(editingMaterialId, materialData);
-    } else {
-      await api.createMaterial(materialData);
-    }
-    await loadMaterials(); // Reload from API
-  } catch (error) {
-    console.error('API not available, using localStorage:', error);
-    // Fallback to localStorage operations
-    const currentMaterials = [...materials];
-    
-    if (editingMaterialId) {
-      // Update existing material
-      const index = currentMaterials.findIndex(m => m.id === editingMaterialId);
-      if (index !== -1) {
-        currentMaterials[index] = { ...materialData, id: editingMaterialId };
-      }
-    } else {
-      // Add new material
-      const newId = currentMaterials.length > 0 ? Math.max(...currentMaterials.map(m => m.id)) + 1 : 1;
-      currentMaterials.push({ ...materialData, id: newId });
-    }
-    
-    setMaterials(currentMaterials);
-    localStorage.setItem('jewelryMaterials', JSON.stringify(currentMaterials));
-  }
-};
-
-const deleteMaterial = async (id) => {
-  try {
-    await api.deleteMaterial(id);
-    await loadMaterials(); // Reload from API
-  } catch (error) {
-    console.error('API not available, using localStorage:', error);
-    // Fallback to localStorage operations
-    const currentMaterials = materials.filter(m => m.id !== id);
-    setMaterials(currentMaterials);
-    localStorage.setItem('jewelryMaterials', JSON.stringify(currentMaterials));
+    console.error('Failed to delete material:', error);
+    alert('Failed to delete material. Please try again.');
   }
 };
 
   const categories = ['Diamond', 'Stone', 'Gold', 'Silver', 'Platinum', 'Other'];
   const units = ['each', 'gram', 'carat', 'piece', 'ounce', 'kilogram'];
 
-  const handleAddMaterial = () => {
+  const handleAddMaterial = async () => {
     if (newMaterial.name && newMaterial.code) {
       // Check if code already exists
       const codeExists = materials.some(material => 
@@ -103,22 +56,25 @@ const deleteMaterial = async (id) => {
         return;
       }
 
-      const newId = Math.max(...materials.map(m => m.id), 0) + 1;
-      const materialToAdd = { 
-        ...newMaterial, 
-        id: newId,
-        createdDate: new Date().toISOString()
-      };
-      setMaterials(prev => [...prev, materialToAdd]);
-      setNewMaterial({
-        category: 'Diamond',
-        name: '',
-        code: '',
-        costPrice: 0,
-        salePrice: 0,
-        unit: 'each'
-      });
-      setShowAddMaterialForm(false);
+      try {
+        const materialToAdd = { 
+          ...newMaterial, 
+          createdDate: new Date().toISOString()
+        };
+        await apiAddMaterial(materialToAdd);
+        setNewMaterial({
+          category: 'Diamond',
+          name: '',
+          code: '',
+          costPrice: 0,
+          salePrice: 0,
+          unit: 'each'
+        });
+        setShowAddMaterialForm(false);
+      } catch (error) {
+        console.error('Failed to add material:', error);
+        alert('Failed to add material. Please try again.');
+      }
     }
   };
 
@@ -127,7 +83,7 @@ const deleteMaterial = async (id) => {
     setEditingMaterial({ ...material });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingMaterial.name && editingMaterial.code) {
       // Check if code already exists (excluding current material)
       const codeExists = materials.some(material => 
@@ -140,22 +96,26 @@ const deleteMaterial = async (id) => {
         return;
       }
 
-      setMaterials(prev => 
-        prev.map(material => 
-          material.id === editingMaterialId 
-            ? { ...editingMaterial, id: editingMaterialId, updatedDate: new Date().toISOString() }
-            : material
-        )
-      );
-      setEditingMaterialId(null);
-      setEditingMaterial({
-        category: 'Diamond',
-        name: '',
-        code: '',
-        costPrice: 0,
-        salePrice: 0,
-        unit: 'each'
-      });
+      try {
+        const updatedMaterial = { 
+          ...editingMaterial, 
+          id: editingMaterialId, 
+          updatedDate: new Date().toISOString() 
+        };
+        await apiUpdateMaterial(editingMaterialId, updatedMaterial);
+        setEditingMaterialId(null);
+        setEditingMaterial({
+          category: 'Diamond',
+          name: '',
+          code: '',
+          costPrice: 0,
+          salePrice: 0,
+          unit: 'each'
+        });
+      } catch (error) {
+        console.error('Failed to update material:', error);
+        alert('Failed to update material. Please try again.');
+      }
     }
   };
 
@@ -171,11 +131,11 @@ const deleteMaterial = async (id) => {
     });
   };
 
-  const handleDeleteMaterial = (id) => {
+  const handleDeleteMaterial = async (id) => {
     const material = materials.find(m => m.id === id);
     
     if (window.confirm(`Are you sure you want to delete material "${material.name}" (${material.code})?`)) {
-      setMaterials(prev => prev.filter(m => m.id !== id));
+      await deleteMaterial(id);
     }
   };
 
@@ -211,10 +171,41 @@ const deleteMaterial = async (id) => {
   };
 
   const calculateMarkup = (costPrice, salePrice) => {
-    return costPrice > 0 ? ((salePrice - costPrice) / costPrice * 100) : 0;
+    const cost = costPrice || 0;
+    const sale = salePrice || 0;
+    return cost > 0 ? ((sale - cost) / cost * 100) : 0;
   };
 
   const filteredMaterials = getFilteredMaterials();
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading materials...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-lg font-medium text-red-800 mb-2">Error Loading Materials</h3>
+          <p className="text-red-600">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-3 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -463,7 +454,7 @@ const deleteMaterial = async (id) => {
                         className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                       />
                     ) : (
-                      <span>₹{material.costPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span>₹{(material.costPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -477,7 +468,7 @@ const deleteMaterial = async (id) => {
                         className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                       />
                     ) : (
-                      <span className="text-green-600 font-semibold">₹{material.salePrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-green-600 font-semibold">₹{(material.salePrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -594,7 +585,7 @@ const deleteMaterial = async (id) => {
             <div>
               <p className="text-yellow-600 text-sm font-medium">Total Value</p>
               <p className="text-2xl font-bold text-yellow-700">
-                ₹{materials.reduce((sum, m) => sum + m.salePrice, 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                ₹{materials.reduce((sum, m) => sum + (m.salePrice || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
             </div>
             <Gem className="text-yellow-500" size={32} />

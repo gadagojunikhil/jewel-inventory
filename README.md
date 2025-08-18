@@ -327,10 +327,12 @@ psql -U your_username -d jewelry_inventory -h localhost
 - `DELETE /api/jewelry/:id` - Delete jewelry item
 
 **Materials:**
-- `GET /api/materials` - Get all materials
-- `POST /api/materials` - Create new material
-- `PUT /api/materials/:id` - Update material
-- `DELETE /api/materials/:id` - Delete material
+- `GET /api/materials` - Get all materials with proper data formatting
+- `GET /api/materials/:id` - Get material by ID
+- `GET /api/materials/category/:category` - Get materials by category
+- `POST /api/materials` - Create new material with validation
+- `PUT /api/materials/:id` - Update material with data integrity
+- `DELETE /api/materials/:id` - Soft delete material
 
 **Categories:**
 - `GET /api/categories` - Get all categories
@@ -393,11 +395,15 @@ This project uses:
   - Advanced search and filtering
   - Bulk upload capabilities
 
-- **Material Management**
-  - Comprehensive material library
-  - Cost and sale price tracking
-  - Unit-based measurements
-  - Material categories (Gold, Diamond, Stone, Silver)
+- **Material Management** 🆕
+  - Comprehensive material library with full CRUD operations
+  - Cost and sale price tracking with proper validation
+  - Unit-based measurements (gram, carat, piece, etc.)
+  - Material categories (Gold, Diamond, Stone, Silver, Platinum)
+  - Real-time markup calculations and profitability analysis
+  - Advanced search and filtering by category
+  - Data integrity with proper field validation
+  - Optimized API with camelCase/snake_case compatibility
 
 - **Vendor Management**
   - Vendor contact information
@@ -405,16 +411,18 @@ This project uses:
   - Purchase history management
 
 - **Database Integration**
-  - PostgreSQL database setup
-  - Complete schema with relationships
-  - Database seeding scripts
-  - Migration capabilities
+  - PostgreSQL database setup with proper schema
+  - Complete database relationships and constraints
+  - Database seeding scripts and migration capabilities
+  - Connection pooling and error handling
+  - Data type validation and conversion
 
 - **UI/UX**
   - Modern, responsive design with Tailwind CSS
   - Intuitive navigation and user interface
   - Real-time dashboard with analytics
   - Mobile-responsive layout
+  - Error handling with user-friendly messages
 
 ### In Progress �
 - **Enhanced Reporting**
@@ -612,6 +620,16 @@ We welcome contributions from the community! Please see our [Contributing Guidel
 **Current Version**: v1.0.0-beta
 
 **Last Updated**: August 18, 2025
+
+### 🆕 Recent Updates (v1.0.0-beta)
+- **Materials Management Complete Implementation**
+  - Fixed API endpoints with full CRUD operations
+  - Resolved cost price and sale price data persistence issues
+  - Added proper data type conversion (string to number)
+  - Implemented camelCase/snake_case field compatibility
+  - Enhanced error handling and validation
+  - Added null safety checks to prevent UI errors
+  - Improved search and filtering capabilities
 
 ---
 
