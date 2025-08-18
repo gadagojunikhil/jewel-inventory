@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Home, Settings, Package, FileText, BarChart3, Calculator,
-  Users, Gem, Plus, Edit2, Upload, DollarSign, Eye, ChevronDown
+  Users, Gem, Plus, Edit2, DollarSign, Eye, ChevronDown
 } from 'lucide-react';
 
 const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }) => {
@@ -19,12 +19,12 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
     },
     {
       id: 'inventory',
-      title: 'Inventory Management',
+      title: 'Inventory',
       submenu: [
         { id: 'view-inventory', title: 'View Inventory', icon: Eye },
         { id: 'add-inventory', title: 'Add Inventory', icon: Plus },
-        { id: 'edit-inventory', title: 'Edit Inventory', icon: Edit2 },
-        { id: 'upload-jewelry', title: 'Upload Jewelry', icon: Upload }
+        { id: 'edit-inventory', title: 'Edit Inventory', icon: Edit2 }
+        // { id: 'upload-jewelry', title: 'Upload Jewelry', icon: Upload } // Future Enhancement
       ]
     },
     {
@@ -124,3 +124,5 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
     </div>
   );
 };
+
+export default Sidebar;

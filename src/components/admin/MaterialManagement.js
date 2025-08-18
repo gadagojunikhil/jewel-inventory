@@ -30,62 +30,95 @@ useEffect(() => {
 
 const loadMaterials = async () => {
   try {
+    // Try API first, fallback to localStorage if backend not available
     const data = await api.getMaterials();
     setMaterials(data);
   } catch (error) {
-    console.error('Failed to load materials:', error);
+    console.error('API not available, using localStorage:', error);
+    // Fallback to localStorage if API fails
+    const savedMaterials = localStorage.getItem('jewelryMaterials');
+    if (savedMaterials) {
+      const localMaterials = JSON.parse(savedMaterials);
+      setMaterials(localMaterials);
+    }
   }
 };
 
 const saveMaterial = async (materialData) => {
   try {
-    if (editingMaterial) {
-      await api.updateMaterial(editingMaterial.id, materialData);
+    // Try API first, fallback to localStorage if backend not available
+    if (editingMaterialId) {
+      await api.updateMaterial(editingMaterialId, materialData);
     } else {
       await api.createMaterial(materialData);
     }
-    await loadMaterials(); // Reload
+    await loadMaterials(); // Reload from API
   } catch (error) {
-    console.error('Failed to save material:', error);
+    console.error('API not available, using localStorage:', error);
+    // Fallback to localStorage operations
+    const currentMaterials = [...materials];
+    
+    if (editingMaterialId) {
+      // Update existing material
+      const index = currentMaterials.findIndex(m => m.id === editingMaterialId);
+      if (index !== -1) {
+        currentMaterials[index] = { ...materialData, id: editingMaterialId };
+      }
+    } else {
+      // Add new material
+      const newId = currentMaterials.length > 0 ? Math.max(...currentMaterials.map(m => m.id)) + 1 : 1;
+      currentMaterials.push({ ...materialData, id: newId });
+    }
+    
+    setMaterials(currentMaterials);
+    localStorage.setItem('jewelryMaterials', JSON.stringify(currentMaterials));
   }
 };
 
 const deleteMaterial = async (id) => {
   try {
     await api.deleteMaterial(id);
-    await loadMaterials(); // Reload
+    await loadMaterials(); // Reload from API
   } catch (error) {
-    console.error('Failed to delete material:', error);
+    console.error('API not available, using localStorage:', error);
+    // Fallback to localStorage operations
+    const currentMaterials = materials.filter(m => m.id !== id);
+    setMaterials(currentMaterials);
+    localStorage.setItem('jewelryMaterials', JSON.stringify(currentMaterials));
   }
 };
+
   const categories = ['Diamond', 'Stone', 'Gold', 'Silver', 'Platinum', 'Other'];
   const units = ['each', 'gram', 'carat', 'piece', 'ounce', 'kilogram'];
 
-  const handleAddMaterial = async () => {
+  const handleAddMaterial = () => {
     if (newMaterial.name && newMaterial.code) {
       // Check if code already exists
       const codeExists = materials.some(material => 
         material.code.toLowerCase() === newMaterial.code.toLowerCase()
       );
+      
       if (codeExists) {
         alert('Material code already exists. Please use a different code.');
         return;
       }
-      try {
-        await api.createMaterial(newMaterial);
-        await loadMaterials();
-        setShowAddMaterialForm(false);
-        setNewMaterial({
-          category: 'Diamond',
-          name: '',
-          code: '',
-          costPrice: 0,
-          salePrice: 0,
-          unit: 'each'
-        });
-      } catch (error) {
-        alert('Failed to add material');
-      }
+
+      const newId = Math.max(...materials.map(m => m.id), 0) + 1;
+      const materialToAdd = { 
+        ...newMaterial, 
+        id: newId,
+        createdDate: new Date().toISOString()
+      };
+      setMaterials(prev => [...prev, materialToAdd]);
+      setNewMaterial({
+        category: 'Diamond',
+        name: '',
+        code: '',
+        costPrice: 0,
+        salePrice: 0,
+        unit: 'each'
+      });
+      setShowAddMaterialForm(false);
     }
   };
 
@@ -94,32 +127,35 @@ const deleteMaterial = async (id) => {
     setEditingMaterial({ ...material });
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = () => {
     if (editingMaterial.name && editingMaterial.code) {
       // Check if code already exists (excluding current material)
       const codeExists = materials.some(material => 
         material.id !== editingMaterialId && 
         material.code.toLowerCase() === editingMaterial.code.toLowerCase()
       );
+      
       if (codeExists) {
         alert('Material code already exists. Please use a different code.');
         return;
       }
-      try {
-        await api.updateMaterial(editingMaterialId, editingMaterial);
-        await loadMaterials();
-        setEditingMaterialId(null);
-        setEditingMaterial({
-          category: 'Diamond',
-          name: '',
-          code: '',
-          costPrice: 0,
-          salePrice: 0,
-          unit: 'each'
-        });
-      } catch (error) {
-        alert('Failed to update material');
-      }
+
+      setMaterials(prev => 
+        prev.map(material => 
+          material.id === editingMaterialId 
+            ? { ...editingMaterial, id: editingMaterialId, updatedDate: new Date().toISOString() }
+            : material
+        )
+      );
+      setEditingMaterialId(null);
+      setEditingMaterial({
+        category: 'Diamond',
+        name: '',
+        code: '',
+        costPrice: 0,
+        salePrice: 0,
+        unit: 'each'
+      });
     }
   };
 
@@ -135,15 +171,11 @@ const deleteMaterial = async (id) => {
     });
   };
 
-  const handleDeleteMaterial = async (id) => {
+  const handleDeleteMaterial = (id) => {
     const material = materials.find(m => m.id === id);
+    
     if (window.confirm(`Are you sure you want to delete material "${material.name}" (${material.code})?`)) {
-      try {
-        await api.deleteMaterial(id);
-        await loadMaterials();
-      } catch (error) {
-        alert('Failed to delete material');
-      }
+      setMaterials(prev => prev.filter(m => m.id !== id));
     }
   };
 

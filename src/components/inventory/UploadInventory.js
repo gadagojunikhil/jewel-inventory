@@ -520,21 +520,51 @@ const UploadInventory = () => {
   };
 
   // Save approved items
-  const saveApprovedItems = async () => {
+  const saveApprovedItems = () => {
     const itemsToSave = approvedItems.map(index => processedItems[index]);
+    
     if (itemsToSave.length === 0) {
       alert('No items approved for saving');
       return;
     }
-    try {
-      // Use bulk upload API
-      const response = await api.bulkUploadJewelry(itemsToSave);
-      alert(`Successfully uploaded ${response.successful.length} items!`);
-      resetUpload();
-    } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload items. Please try again.');
-    }
+    
+    // Get existing jewelry pieces
+    const existingJewelry = JSON.parse(localStorage.getItem('jewelryPieces') || '[]');
+    
+    // Add new items with proper IDs
+    const maxId = existingJewelry.length > 0 
+      ? Math.max(...existingJewelry.map(item => item.id)) 
+      : 0;
+    
+    const newItems = itemsToSave.map((item, index) => ({
+      ...item,
+      id: maxId + index + 1,
+      code: item.itemCode,
+      status: 'In Stock'
+    }));
+    
+    // Save to localStorage
+   /*  const updatedJewelry = [...existingJewelry, ...newItems];
+    localStorage.setItem('jewelryPieces', JSON.stringify(updatedJewelry));
+    
+    alert(`Successfully added ${newItems.length} items to inventory!`);
+    
+    // Reset state
+    resetUpload(); */
+    const saveApprovedItems = async () => {
+  try {
+    const itemsToSave = approvedItems.map(index => processedItems[index]);
+    
+    // Use bulk upload API
+    const response = await api.bulkUploadJewelry(itemsToSave);
+    
+    alert(`Successfully uploaded ${response.successful.length} items!`);
+    resetUpload();
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('Failed to upload items. Please try again.');
+  }
+};
   };
 
   // Reset upload state

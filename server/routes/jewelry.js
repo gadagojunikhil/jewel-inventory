@@ -17,14 +17,38 @@ router.get('/', async (req, res) => {
       page = 1,
       limit = 10
     } = req.query;
-    // ...existing code...
-    // Your query and logic here
-    // ...existing code...
-    // No client is created in this route, so do not release client
-    // ...existing code...
+    
+    let query = `
+      SELECT 
+        j.*,
+        c.name as category_name,
+        json_agg(
+          json_build_object(
+            'material_id', jm.material_id,
+            'material_name', m.name,
+            'material_code', m.code,
+            'quantity', jm.quantity,
+            'unit', m.unit,
+            'cost_per_unit', jm.cost_per_unit,
+            'total_cost', jm.total_cost
+          )
+        ) FILTER (WHERE jm.id IS NOT NULL) as materials
+      FROM jewelry_pieces j
+      LEFT JOIN categories c ON j.category_id = c.id
+      LEFT JOIN jewelry_materials jm ON j.id = jm.jewelry_id
+      LEFT JOIN materials m ON jm.material_id = m.id
+      WHERE j.id = $1
+      GROUP BY j.id, c.name
+    `;
+    
+    const completeResult = await pool.query(completeQuery, [id]);
+    res.json(completeResult.rows[0]);
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error(error);
     res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 

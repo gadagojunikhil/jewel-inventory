@@ -1,68 +1,27 @@
-// src/components/inventory/UploadInventory.js
+import React from 'react';
+import { Upload } from 'lucide-react';
 
-import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
-
-const UploadInventory = () => {
-  const [fileData, setFileData] = useState([]);
-  const [fileName, setFileName] = useState('');
-  const [error, setError] = useState('');
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const extension = file.name.split('.').pop().toLowerCase();
-    setFileName(file.name);
-    setError('');
-
-    try {
-      if (extension === 'csv' || extension === 'xlsx') {
-        const data = await parseExcelOrCSV(file);
-        setFileData(data);
-      } else {
-        setError('Only CSV or Excel files are supported at this stage.');
-      }
-    } catch (err) {
-      setError('Failed to parse file. Please check the format.');
-    }
-  };
-
-  const parseExcelOrCSV = async (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-          resolve(json);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      reader.onerror = (err) => reject(err);
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
+const UploadJewelry = () => {
   return (
-    <div className="upload-inventory">
-      <h2>📦 Upload Inventory File</h2>
-      <input type="file" accept=".csv,.xlsx" onChange={handleFileChange} />
-      {fileName && <p>✅ Uploaded: {fileName}</p>}
-      {error && <p style={{ color: 'red' }}>⚠️ {error}</p>}
-
-      {fileData.length > 0 && (
-        <div>
-          <h4>📊 Parsed Items: {fileData.length}</h4>
-          <pre>{JSON.stringify(fileData.slice(0, 3), null, 2)}</pre>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">Upload Jewelry</h1>
+      
+      <div className="bg-white rounded-lg shadow border p-6">
+        <div className="text-center">
+          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <h2 className="text-lg font-semibold text-gray-700 mb-2">
+            Bulk Upload Feature
+          </h2>
+          <p className="text-gray-600 mb-4">
+            This feature will be available in a future update.
+          </p>
+          <p className="text-sm text-gray-500">
+            For now, please use the individual forms to manage your jewelry inventory.
+          </p>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default UploadInventory;
+export default UploadJewelry;
