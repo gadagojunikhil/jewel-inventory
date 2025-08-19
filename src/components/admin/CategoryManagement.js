@@ -39,14 +39,18 @@ const CategoryManagement = ({
     type: 'parent'
   });
 
-  // Get parent categories (Material Types)
+  // Get parent categories (Jewelry Categories)
   const getParentCategories = () => {
-    return jewelryCategories.filter(cat => cat.type === 'parent' || !cat.parentId);
+    const parents = jewelryCategories.filter(cat => cat.type === 'parent' || !cat.parentId);
+    console.log('Parent categories:', parents);
+    return parents;
   };
 
   // Get child categories for a specific parent
   const getChildCategories = (parentId) => {
-    return jewelryCategories.filter(cat => cat.parentId === parentId);
+    const children = jewelryCategories.filter(cat => cat.parentId === parentId);
+    console.log(`Child categories for parent ${parentId}:`, children);
+    return children;
   };
   // Toggle expansion of parent category
   const toggleExpansion = (categoryId) => {
@@ -61,10 +65,30 @@ const CategoryManagement = ({
 
   const handleAddCategory = () => {
     // For parent categories, only name is required
-    // For child categories, both name and code are required
+    // For child categories, name, code, and parentId are required
     const isValid = categoryType === 'parent'
-      ? newCategory.name
-      : newCategory.name && newCategory.code;
+      ? newCategory.name.trim()
+      : newCategory.name.trim() && newCategory.code.trim() && newCategory.parentId;
+
+    if (!isValid) {
+      if (categoryType === 'child') {
+        if (!newCategory.name.trim()) {
+          alert('Product Type name is required');
+          return;
+        }
+        if (!newCategory.code.trim()) {
+          alert('Product Type code is required');
+          return;
+        }
+        if (!newCategory.parentId) {
+          alert('Please select a Jewelry Category for this Product Type');
+          return;
+        }
+      } else {
+        alert('Jewelry Category name is required');
+        return;
+      }
+    }
 
     if (isValid) {
       // Check if code already exists (only for child categories)
@@ -87,7 +111,17 @@ const CategoryManagement = ({
         parentId: categoryType === 'child' ? newCategory.parentId : null,
         code: categoryType === 'parent' ? null : newCategory.code // No code for parents
       };
-      setJewelryCategories(prev => [...prev, categoryToAdd]);
+      console.log('Adding new category:', categoryToAdd);
+      setJewelryCategories(prev => {
+        const updated = [...prev, categoryToAdd];
+        console.log('Updated jewelry categories after add:', updated);
+        return updated;
+      });
+      
+      // Show success message
+      const categoryTypeName = categoryType === 'parent' ? 'Jewelry Category' : 'Product Type';
+      alert(`${categoryTypeName} "${categoryToAdd.name}" added successfully!`);
+      
       setNewCategory({
         name: '',
         code: '',
@@ -102,7 +136,7 @@ const CategoryManagement = ({
     }
   };
 
-  const handleCreateNewMaterial = () => {
+  const handleCreateNewJewelryCategory = () => {
     if (newMaterialName.trim()) {
       const newId = Math.max(...jewelryCategories.map(c => c.id), 0) + 1;
       const newMaterial = {
@@ -116,7 +150,13 @@ const CategoryManagement = ({
         type: 'parent'
       };
 
-      setJewelryCategories(prev => [...prev, newMaterial]);
+      console.log('Adding new jewelry category:', newMaterial);
+      setJewelryCategories(prev => {
+        const updated = [...prev, newMaterial];
+        console.log('Updated jewelry categories:', updated);
+        return updated;
+      });
+      alert(`Jewelry Category "${newMaterial.name}" created successfully!`);
       setNewCategory(prev => ({ ...prev, parentId: newId }));
       setNewMaterialName('');
       setShowCreateNewMaterial(false);
@@ -370,12 +410,13 @@ const CategoryManagement = ({
     );
   };
 
+  // Calculate parent categories reactively
   const parentCategories = getParentCategories();
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Category Management</h2>
+        <h2 className="text-2xl font-bold">Product Categories</h2>
         <div className="flex space-x-3">
           <button
             onClick={() => {
@@ -391,7 +432,7 @@ const CategoryManagement = ({
             title={!canCreate ? `No permission to create categories (Level: ${permissionLevel})` : ''}
           >
             <Award size={20} />
-            <span>Add Jewelry Type</span>
+            <span>Add Product Type</span>
           </button>
           <button
             onClick={() => {
@@ -407,7 +448,7 @@ const CategoryManagement = ({
             title={!canCreate ? `No permission to create categories (Level: ${permissionLevel})` : ''}
           >
             <Plus size={20} />
-            <span>Add Material Type</span>
+            <span>Add Jewelry Category</span>
           </button>
         </div>
       </div>
@@ -416,7 +457,7 @@ const CategoryManagement = ({
       {showAddCategoryForm && (
         <div className="mb-6 bg-blue-50 p-6 rounded-lg border">
           <h3 className="text-lg font-semibold mb-4">
-            {categoryType === 'parent' ? 'Add New Material Type' : 'Add New Jewelry Type'}
+            {categoryType === 'parent' ? 'Add New Jewelry Category' : 'Add New Product Type'}
           </h3>
 
           {/* Category Type Display */}
@@ -425,13 +466,13 @@ const CategoryManagement = ({
               {categoryType === 'parent' ? (
                 <>
                   <Gem className="mr-2 text-blue-500" size={20} />
-                  <span className="font-medium text-blue-700">Creating Material Type</span>
+                  <span className="font-medium text-blue-700">Creating Jewelry Category</span>
                   <span className="ml-2 text-sm text-gray-600">(e.g., Diamond, Gold, Kundan)</span>
                 </>
               ) : (
                 <>
                   <Award className="mr-2 text-green-500" size={20} />
-                  <span className="font-medium text-green-700">Creating Jewelry Type</span>
+                  <span className="font-medium text-green-700">Creating Product Type</span>
                   <span className="ml-2 text-sm text-gray-600">(e.g., Necklace, Ring, Earring)</span>
                 </>
               )}
@@ -442,7 +483,7 @@ const CategoryManagement = ({
             {/* Parent Selection for Child Categories */}
             {categoryType === 'child' && (
               <div>
-                <label className="block text-sm font-medium mb-1">Parent Material *</label>
+                <label className="block text-sm font-medium mb-1">Jewelry Category *</label>
                 <div className="space-y-2">
                   <select
                     value={newCategory.parentId || ''}
@@ -450,7 +491,7 @@ const CategoryManagement = ({
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                     required
                   >
-                    <option value="">Select Parent Material</option>
+                    <option value="">Select Jewelry Category</option>
                     {parentCategories.map(parent => (
                       <option key={parent.id} value={parent.id}>{parent.name}</option>
                     ))}
@@ -464,7 +505,7 @@ const CategoryManagement = ({
                       className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
                     >
                       <Plus size={14} className="mr-1" />
-                      Create new material type
+                      Create new jewelry category
                     </button>
                   </div>
 
@@ -472,7 +513,7 @@ const CategoryManagement = ({
                   {showCreateNewMaterial && (
                     <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                       <label className="block text-sm font-medium mb-1 text-yellow-800">
-                        New Material Type Name
+                        New Jewelry Category Name
                       </label>
                       <div className="flex space-x-2">
                         <input
@@ -481,11 +522,11 @@ const CategoryManagement = ({
                           onChange={(e) => setNewMaterialName(e.target.value)}
                           className="flex-1 p-2 border rounded focus:ring-2 focus:ring-yellow-500"
                           placeholder="e.g., Silver, Platinum"
-                          onKeyPress={(e) => e.key === 'Enter' && handleCreateNewMaterial()}
+                          onKeyPress={(e) => e.key === 'Enter' && handleCreateNewJewelryCategory()}
                         />
                         <button
                           type="button"
-                          onClick={handleCreateNewMaterial}
+                          onClick={handleCreateNewJewelryCategory}
                           disabled={!newMaterialName.trim()}
                           className="bg-yellow-600 text-white px-3 py-2 rounded hover:bg-yellow-700 disabled:bg-gray-300"
                         >
@@ -510,7 +551,7 @@ const CategoryManagement = ({
 
             <div>
               <label className="block text-sm font-medium mb-1">
-                {categoryType === 'parent' ? 'Material Name *' : 'Jewelry Type *'}
+                {categoryType === 'parent' ? 'Category Name *' : 'Product Type *'}
               </label>
               <input
                 type="text"
@@ -583,7 +624,7 @@ const CategoryManagement = ({
             >
               <Save size={16} />
               <span>
-                {categoryType === 'parent' ? 'Add Material Type' : 'Add Jewelry Type'}
+                {categoryType === 'parent' ? 'Add Jewelry Category' : 'Add Product Type'}
               </span>
             </button>
             <button
@@ -619,14 +660,14 @@ const CategoryManagement = ({
             <div className="flex items-center space-x-6 text-sm">
               <div className="flex items-center">
                 <Gem className="mr-1 text-blue-500" size={16} />
-                <span>Material Types</span>
+                <span>Jewelry Categories</span>
               </div>
               <div className="flex items-center">
                 <Award className="mr-1 text-green-500" size={16} />
-                <span>Jewelry Types</span>
+                <span>Product Types</span>
               </div>
               <div className="text-gray-600">
-                Click <Award size={14} className="inline mx-1" /> above to add jewelry types quickly
+                Click <Award size={14} className="inline mx-1" /> above to add product types quickly
               </div>
             </div>
           </div>
@@ -653,7 +694,7 @@ const CategoryManagement = ({
         <div className="bg-blue-50 p-4 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-600 text-sm font-medium">Material Types</p>
+              <p className="text-blue-600 text-sm font-medium">Jewelry Categories</p>
               <p className="text-2xl font-bold text-blue-700">{parentCategories.length}</p>
             </div>
             <Gem className="text-blue-500" size={32} />
@@ -663,7 +704,7 @@ const CategoryManagement = ({
         <div className="bg-green-50 p-4 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-600 text-sm font-medium">Jewelry Types</p>
+              <p className="text-green-600 text-sm font-medium">Product Types</p>
               <p className="text-2xl font-bold text-green-700">
                 {jewelryCategories.filter(cat => cat.type === 'child' || cat.parentId).length}
               </p>
@@ -704,9 +745,9 @@ const CategoryManagement = ({
       <div className="mt-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
         <h4 className="font-semibold text-yellow-800 mb-2">Hierarchical Category Guide:</h4>
         <div className="text-sm text-yellow-700 space-y-1">
-          <p>• <strong>Quick Add:</strong> Use "Add Jewelry Type" button for faster workflow - most common operation</p>
-          <p>• <strong>Create Material On-the-fly:</strong> When adding jewelry types, create new material types instantly if needed</p>
-          <p>• <strong>Material Types:</strong> Diamond, Gold, Kundan, etc. - No codes needed, used for grouping</p>
+          <p>• <strong>Quick Add:</strong> Use "Add Product Type" button for faster workflow - most common operation</p>
+          <p>• <strong>Create Category On-the-fly:</strong> When adding product types, create new jewelry categories instantly if needed</p>
+          <p>• <strong>Jewelry Categories:</strong> Diamond, Gold, Kundan, etc. - No codes needed, used for grouping</p>
           <p>• <strong>Jewelry Types:</strong> Necklace, Ring, Earring, etc. - Require unique codes for identification</p>
           <p>• <strong>Expand/Collapse:</strong> Click the arrow to expand parent categories and see their jewelry types</p>
           <p>• <strong>Code Format:</strong> Only jewelry types need codes like DIA-N (Diamond Necklace), GOLD-R (Gold Ring)</p>

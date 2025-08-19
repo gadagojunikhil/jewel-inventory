@@ -42,6 +42,9 @@ function AppContent() {
   const { canAccessPage } = usePermissions();
   const [currentModule, setCurrentModule] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Jewelry categories state for CategoryManagement
+  const [jewelryCategories, setJewelryCategories] = useState([]);
 
   const handleMenuClick = (moduleId) => {
     setCurrentModule(moduleId);
@@ -95,7 +98,10 @@ function AppContent() {
       case 'material-management':
         return <MaterialManagement />;
       case 'category-management':
-        return <CategoryManagement />;
+        return <CategoryManagement 
+          jewelryCategories={jewelryCategories}
+          setJewelryCategories={setJewelryCategories}
+        />;
       case 'vendor-management':
         return <VendorManagement />;
       case 'user-management':
