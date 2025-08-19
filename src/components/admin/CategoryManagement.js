@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Package, ChevronDown, ChevronRight, Gem, Award } from 'lucide-react';
+import usePermissions from '../../hooks/usePermissions';
 
 const CategoryManagement = ({
   jewelryCategories = [],
   setJewelryCategories = () => {}
 }) => {
+  const { hasPermission, getPermissionLevel } = usePermissions();
+  
+  // Permission checks for category-management page
+  const canCreate = hasPermission('category-management', 'create');
+  const canEdit = hasPermission('category-management', 'edit');
+  const canDelete = hasPermission('category-management', 'delete');
+  const canView = hasPermission('category-management', 'view');
+  const permissionLevel = getPermissionLevel('category-management');
   const [showCreateNewMaterial, setShowCreateNewMaterial] = useState(false);
   const [newMaterialName, setNewMaterialName] = useState('');
   const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
@@ -329,15 +338,25 @@ const CategoryManagement = ({
               <div className="flex space-x-2">
                 <button
                   onClick={() => handleEditCategory(category)}
-                  className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                  title="Edit category"
+                  disabled={!canEdit}
+                  className={`p-2 rounded ${
+                    canEdit 
+                      ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                  title={!canEdit ? `No permission to edit categories (Level: ${permissionLevel})` : 'Edit category'}
                 >
                   <Edit2 size={16} />
                 </button>
                 <button
                   onClick={() => handleDeleteCategory(category.id)}
-                  className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
-                  title="Delete category"
+                  disabled={!canDelete}
+                  className={`p-2 rounded ${
+                    canDelete 
+                      ? 'bg-red-500 text-white hover:bg-red-600' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                  title={!canDelete ? `No permission to delete categories (Level: ${permissionLevel})` : 'Delete category'}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -363,7 +382,13 @@ const CategoryManagement = ({
               setCategoryType('child');
               setShowAddCategoryForm(true);
             }}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center space-x-2"
+            disabled={!canCreate}
+            className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
+              canCreate 
+                ? 'bg-green-500 text-white hover:bg-green-600' 
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            title={!canCreate ? `No permission to create categories (Level: ${permissionLevel})` : ''}
           >
             <Award size={20} />
             <span>Add Jewelry Type</span>
@@ -373,7 +398,13 @@ const CategoryManagement = ({
               setCategoryType('parent');
               setShowAddCategoryForm(true);
             }}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2"
+            disabled={!canCreate}
+            className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
+              canCreate 
+                ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            title={!canCreate ? `No permission to create categories (Level: ${permissionLevel})` : ''}
           >
             <Plus size={20} />
             <span>Add Material Type</span>

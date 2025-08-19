@@ -8,22 +8,18 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ error: 'Access token required' });
     }
     
-    // Temporary: Allow dummy token for development
-    if (token === 'dummy-token') {
-      req.userId = 1;
-      req.userRole = 'super_admin';
-      req.username = 'admin';
-      req.user = { id: 1, role: 'super_admin', username: 'admin' };
-      next();
-      return;
-    }
-    
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
       req.userId = decoded.userId;
       req.userRole = decoded.role;
       req.username = decoded.username;
       req.fullName = decoded.fullName;
+      req.user = {
+        id: decoded.userId,
+        role: decoded.role,
+        username: decoded.username,
+        fullName: decoded.fullName
+      };
       
       next();
     } catch (jwtError) {

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 // Auth Components
 import Login from './components/auth/Login';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import usePermissions from './hooks/usePermissions';
 
 // Admin Components  
 import MaterialManagement from './components/admin/MaterialManagement';
@@ -37,6 +38,7 @@ import { Menu, LogOut, User } from 'lucide-react';
 
 function AppContent() {
   const { user, isAuthenticated, loading, logout } = useAuth();
+  const { canAccessPage } = usePermissions();
   const [currentModule, setCurrentModule] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -61,36 +63,10 @@ function AppContent() {
     return <Login />;
   }
 
-  // Role-based access control
-  const hasAccess = (feature) => {
+  // Permission-based access control
+  const hasAccess = (pageId) => {
     if (!user) return false;
-    
-    const { role } = user;
-    
-    switch (feature) {
-      case 'user-management':
-      case 'permissions-management':
-        return role === 'super_admin';
-      case 'material-management':
-      case 'category-management':
-      case 'vendor-management':
-        return ['super_admin', 'admin', 'manager'].includes(role);
-      case 'add-inventory':
-      case 'edit-inventory':
-        return ['super_admin', 'admin', 'manager'].includes(role);
-      case 'view-inventory':
-      case 'available-stock':
-      case 'vendor-stock':
-        return true; // All roles can view
-      case 'indian-billing':
-      case 'us-billing':
-        return ['super_admin', 'admin', 'manager'].includes(role);
-      case 'dollar-rate':
-      case 'data-sync':
-        return ['super_admin', 'admin', 'manager'].includes(role);
-      default:
-        return true;
-    }
+    return canAccessPage(pageId);
   };
 
   const renderContent = () => {

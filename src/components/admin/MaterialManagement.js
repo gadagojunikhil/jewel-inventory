@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Gem, Search } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import usePermissions from '../../hooks/usePermissions';
 
 const MaterialManagement = () => {
   const { user } = useAuth();
+  const { hasPermission, getPermissionLevel } = usePermissions();
+  
+  // Permission checks for material-management page
+  const canCreate = hasPermission('material-management', 'create');
+  const canEdit = hasPermission('material-management', 'edit');
+  const canDelete = hasPermission('material-management', 'delete');
+  const canView = hasPermission('material-management', 'view');
+  const permissionLevel = getPermissionLevel('material-management');
+  
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Role-based permissions
-  const canAdd = ['super_admin', 'admin'].includes(user?.role);
-  const canEdit = ['super_admin', 'admin', 'manager'].includes(user?.role);
-  const canDelete = ['super_admin', 'admin'].includes(user?.role);
   const [showAddMaterialForm, setShowAddMaterialForm] = useState(false);
   const [editingMaterialId, setEditingMaterialId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -322,15 +327,19 @@ const MaterialManagement = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Material Management</h2>
-        {canAdd && (
-          <button
-            onClick={() => setShowAddMaterialForm(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2"
-          >
-            <Plus size={20} />
-            <span>Add Material</span>
-          </button>
-        )}
+        <button
+          onClick={() => setShowAddMaterialForm(true)}
+          disabled={!canCreate}
+          className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
+            canCreate 
+              ? 'bg-blue-500 text-white hover:bg-blue-600' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          title={!canCreate ? `No permission to create materials (Level: ${permissionLevel})` : ''}
+        >
+          <Plus size={20} />
+          <span>Add Material</span>
+        </button>
       </div>
 
       {/* Search and Filter Section */}
@@ -629,24 +638,30 @@ const MaterialManagement = () => {
                       </div>
                     ) : (
                       <div className="flex space-x-2">
-                        {canEdit && (
-                          <button
-                            onClick={() => handleEditMaterial(material)}
-                            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                            title="Edit material"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button 
-                            onClick={() => handleDeleteMaterial(material.id)}
-                            className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
-                            title="Delete material"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleEditMaterial(material)}
+                          disabled={!canEdit}
+                          className={`p-2 rounded ${
+                            canEdit 
+                              ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                          title={!canEdit ? `No permission to edit materials (Level: ${permissionLevel})` : 'Edit material'}
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteMaterial(material.id)}
+                          disabled={!canDelete}
+                          className={`p-2 rounded ${
+                            canDelete 
+                              ? 'bg-red-500 text-white hover:bg-red-600' 
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                          title={!canDelete ? `No permission to delete materials (Level: ${permissionLevel})` : 'Delete material'}
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     )}
                   </td>

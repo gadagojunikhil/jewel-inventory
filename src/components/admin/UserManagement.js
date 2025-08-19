@@ -17,8 +17,18 @@ import {
   Unlock,
   Info
 } from 'lucide-react';
+import usePermissions from '../../hooks/usePermissions';
 
 const UserManagement = () => {
+  const { hasPermission, getPermissionLevel } = usePermissions();
+  
+  // Permission checks for user-management page
+  const canCreate = hasPermission('user-management', 'create');
+  const canEdit = hasPermission('user-management', 'edit');
+  const canDelete = hasPermission('user-management', 'delete');
+  const canView = hasPermission('user-management', 'view');
+  const permissionLevel = getPermissionLevel('user-management');
+  
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -278,7 +288,13 @@ const UserManagement = () => {
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
+          disabled={!canCreate}
+          className={`px-4 py-2 rounded-md flex items-center ${
+            canCreate 
+              ? 'bg-blue-600 text-white hover:bg-blue-700' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          title={!canCreate ? `No permission to create users (Level: ${permissionLevel})` : ''}
         >
           <UserPlus className="w-4 h-4 mr-2" />
           Add User
@@ -392,22 +408,37 @@ const UserManagement = () => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => setEditingUser(user)}
-                      className="text-blue-600 hover:text-blue-900"
-                      title="Edit User"
+                      disabled={!canEdit}
+                      className={`${
+                        canEdit 
+                          ? 'text-blue-600 hover:text-blue-900' 
+                          : 'text-gray-400 cursor-not-allowed'
+                      }`}
+                      title={!canEdit ? `No permission to edit users (Level: ${permissionLevel})` : 'Edit User'}
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setShowPasswordReset(user.id)}
-                      className="text-green-600 hover:text-green-900"
-                      title="Reset Password"
+                      disabled={!canEdit}
+                      className={`${
+                        canEdit 
+                          ? 'text-green-600 hover:text-green-900' 
+                          : 'text-gray-400 cursor-not-allowed'
+                      }`}
+                      title={!canEdit ? `No permission to reset passwords (Level: ${permissionLevel})` : 'Reset Password'}
                     >
                       <Key className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteUser(user.id)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Delete User"
+                      disabled={!canDelete}
+                      className={`${
+                        canDelete 
+                          ? 'text-red-600 hover:text-red-900' 
+                          : 'text-gray-400 cursor-not-allowed'
+                      }`}
+                      title={!canDelete ? `No permission to delete users (Level: ${permissionLevel})` : 'Delete User'}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

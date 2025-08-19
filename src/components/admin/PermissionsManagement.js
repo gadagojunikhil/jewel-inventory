@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Check, X, Settings, Info, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { apiService } from '../../services/api';
 
 const PermissionsManagement = () => {
   const { user } = useAuth();
@@ -10,6 +11,24 @@ const PermissionsManagement = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [loading, setLoading] = useState(false);
   const [customPermissions, setCustomPermissions] = useState({});
+
+  // Available roles including the new Guest role
+  const availableRoles = [
+    { id: 'super_admin', name: 'Super Admin', color: 'bg-purple-100 text-purple-800', icon: '👑' },
+    { id: 'admin', name: 'Admin', color: 'bg-red-100 text-red-800', icon: '🛠️' },
+    { id: 'manager', name: 'Manager', color: 'bg-blue-100 text-blue-800', icon: '📋' },
+    { id: 'user', name: 'User', color: 'bg-green-100 text-green-800', icon: '👤' },
+    { id: 'guest', name: 'Guest', color: 'bg-gray-100 text-gray-800', icon: '👥' }
+  ];
+
+  // Permission types with their details
+  const permissionTypes = [
+    { id: 'create', name: 'Create', icon: '➕', color: 'text-green-600' },
+    { id: 'view', name: 'View', icon: '👁️', color: 'text-blue-600' },
+    { id: 'edit', name: 'Edit', icon: '✏️', color: 'text-yellow-600' },
+    { id: 'delete', name: 'Delete', icon: '🗑️', color: 'text-red-600' },
+    { id: 'approve', name: 'Approve', icon: '✅', color: 'text-purple-600' }
+  ];
 
   // All pages/features in the system with their details
   const systemPages = [
@@ -113,117 +132,118 @@ const PermissionsManagement = () => {
     }
   ];
 
-  // Current permission matrix
+  // Current permission matrix with new structure
   const getPermissionMatrix = () => {
     const permissions = {};
     
     systemPages.forEach(page => {
-      permissions[page.id] = {
-        super_admin: getPageAccess(page.id, 'super_admin'),
-        admin: getPageAccess(page.id, 'admin'),
-        manager: getPageAccess(page.id, 'manager'),
-        user: getPageAccess(page.id, 'user')
-      };
+      permissions[page.id] = {};
+      availableRoles.forEach(role => {
+        permissions[page.id][role.id] = getPageAccess(page.id, role.id);
+      });
     });
 
     return permissions;
   };
 
-  // Get access level for a specific page and role
+  // Get access level for a specific page and role with new permission structure
   const getPageAccess = (pageId, role) => {
+    const defaultPermissions = {
+      create: false,
+      view: false,
+      edit: false,
+      delete: false,
+      approve: false
+    };
+
     switch (pageId) {
       case 'dashboard':
-        return { access: true, level: 'view' };
+        if (role === 'guest') {
+          return { view: true };
+        }
+        return { view: true };
       
       case 'user-management':
-        return role === 'super_admin' 
-          ? { access: true, level: 'full' }
-          : { access: false, level: 'none' };
+        if (role === 'super_admin') {
+          return { create: true, view: true, edit: true, delete: true, approve: true };
+        }
+        return defaultPermissions;
       
       case 'material-management':
-        if (['super_admin', 'admin'].includes(role)) {
-          return { access: true, level: 'full' };
+        if (role === 'super_admin') {
+          return { create: true, view: true, edit: true, delete: true, approve: true };
+        } else if (role === 'admin') {
+          return { create: true, view: true, edit: true, delete: true, approve: false };
         } else if (role === 'manager') {
-          return { access: true, level: 'edit' };
-        } else {
-          return { access: true, level: 'view' };
+          return { create: false, view: true, edit: true, delete: false, approve: false };
+        } else if (role === 'user') {
+          return { view: true };
         }
+        return defaultPermissions;
       
       case 'category-management':
       case 'vendor-management':
-        return ['super_admin', 'admin', 'manager'].includes(role)
-          ? { access: true, level: 'full' }
-          : { access: false, level: 'none' };
+        if (['super_admin', 'admin'].includes(role)) {
+          return { create: true, view: true, edit: true, delete: true, approve: false };
+        } else if (role === 'manager') {
+          return { create: true, view: true, edit: true, delete: false, approve: false };
+        }
+        return defaultPermissions;
       
       case 'add-inventory':
       case 'edit-inventory':
-        return ['super_admin', 'admin', 'manager'].includes(role)
-          ? { access: true, level: 'full' }
-          : { access: false, level: 'none' };
+        if (['super_admin', 'admin'].includes(role)) {
+          return { create: true, view: true, edit: true, delete: true, approve: true };
+        } else if (role === 'manager') {
+          return { create: true, view: true, edit: true, delete: false, approve: false };
+        }
+        return defaultPermissions;
       
       case 'view-inventory':
       case 'available-stock':
       case 'vendor-stock':
-        return { access: true, level: 'view' };
+        if (role === 'guest') {
+          return { view: true };
+        }
+        return { view: true };
       
       case 'indian-billing':
       case 'us-billing':
-        return ['super_admin', 'admin', 'manager'].includes(role)
-          ? { access: true, level: 'full' }
-          : { access: false, level: 'none' };
+        if (['super_admin', 'admin'].includes(role)) {
+          return { create: true, view: true, edit: true, delete: true, approve: true };
+        } else if (role === 'manager') {
+          return { create: true, view: true, edit: false, delete: false, approve: false };
+        }
+        return defaultPermissions;
       
       case 'dollar-rate':
       case 'data-sync':
-        return ['super_admin', 'admin', 'manager'].includes(role)
-          ? { access: true, level: 'full' }
-          : { access: false, level: 'none' };
+        if (['super_admin', 'admin'].includes(role)) {
+          return { create: true, view: true, edit: true, delete: false, approve: false };
+        } else if (role === 'manager') {
+          return { view: true };
+        }
+        return defaultPermissions;
       
       default:
-        return { access: false, level: 'none' };
+        return defaultPermissions;
     }
   };
 
-  const getAccessIcon = (access) => {
-    if (!access.access) return <X className="w-4 h-4 text-red-500" />;
-    
-    switch (access.level) {
-      case 'full': return <Check className="w-4 h-4 text-green-500" />;
-      case 'edit': return <Settings className="w-4 h-4 text-blue-500" />;
-      case 'view': return <Info className="w-4 h-4 text-gray-500" />;
-      default: return <X className="w-4 h-4 text-red-500" />;
-    }
-  };
-
-  const getAccessText = (access) => {
-    if (!access.access) return 'No Access';
-    
-    switch (access.level) {
-      case 'full': return 'Full Access';
-      case 'edit': return 'Edit Only';
-      case 'view': return 'View Only';
-      default: return 'No Access';
-    }
-  };
-
-  const getAccessColor = (access) => {
-    if (!access.access) return 'bg-red-50 text-red-700';
-    
-    switch (access.level) {
-      case 'full': return 'bg-green-50 text-green-700';
-      case 'edit': return 'bg-blue-50 text-blue-700';
-      case 'view': return 'bg-gray-50 text-gray-700';
-      default: return 'bg-red-50 text-red-700';
-    }
-  };
-
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'super_admin': return 'bg-purple-100 text-purple-800';
-      case 'admin': return 'bg-red-100 text-red-800';
-      case 'manager': return 'bg-blue-100 text-blue-800';
-      case 'user': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  // Handle permission change for new checkbox structure
+  const handlePermissionChange = (pageId, role, permissionType, value) => {
+    const updatedPermissions = {
+      ...editablePermissions,
+      [pageId]: {
+        ...editablePermissions[pageId],
+        [role]: {
+          ...editablePermissions[pageId][role],
+          [permissionType]: value
+        }
+      }
+    };
+    setEditablePermissions(updatedPermissions);
+    setHasChanges(true);
   };
 
   const groupedPages = systemPages.reduce((acc, page) => {
@@ -251,26 +271,10 @@ const PermissionsManagement = () => {
     try {
       setLoading(true);
       
-      let token = localStorage.getItem('token');
-      if (!token) {
-        token = 'dummy-token';
-        localStorage.setItem('token', token);
-      }
-
-      const response = await fetch('/api/permissions', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await apiService.getCustomPermissions();
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch permissions');
-      }
-      
-      const data = await response.json();
-      if (data.success) {
-        setCustomPermissions(data.data);
+      if (response.success) {
+        setCustomPermissions(response.data);
       }
     } catch (error) {
       console.error('Error loading custom permissions:', error);
@@ -286,7 +290,50 @@ const PermissionsManagement = () => {
     Object.keys(customOverrides).forEach(pageId => {
       if (merged[pageId]) {
         Object.keys(customOverrides[pageId]).forEach(role => {
-          merged[pageId][role] = customOverrides[pageId][role];
+          const backendPermission = customOverrides[pageId][role];
+          
+          // Convert backend format to new checkbox format
+          let newPermission = {
+            create: false,
+            view: false,
+            edit: false,
+            delete: false,
+            approve: false
+          };
+          
+          if (backendPermission.access) {
+            switch (backendPermission.level) {
+              case 'full':
+                newPermission = {
+                  create: true,
+                  view: true,
+                  edit: true,
+                  delete: true,
+                  approve: true
+                };
+                break;
+              case 'edit':
+                newPermission = {
+                  create: false,
+                  view: true,
+                  edit: true,
+                  delete: false,
+                  approve: false
+                };
+                break;
+              case 'view':
+                newPermission = {
+                  create: false,
+                  view: true,
+                  edit: false,
+                  delete: false,
+                  approve: false
+                };
+                break;
+            }
+          }
+          
+          merged[pageId][role] = newPermission;
         });
       }
     });
@@ -294,56 +341,59 @@ const PermissionsManagement = () => {
     return merged;
   };
 
-  // Handle permission change
-  const handlePermissionChange = (pageId, role, newLevel) => {
-    const updatedPermissions = {
-      ...editablePermissions,
-      [pageId]: {
-        ...editablePermissions[pageId],
-        [role]: {
-          access: newLevel !== 'none',
-          level: newLevel
-        }
-      }
-    };
-    setEditablePermissions(updatedPermissions);
-    setHasChanges(true);
-  };
-
   // Save changes
   const savePermissions = async () => {
     try {
       setLoading(true);
       
-      let token = localStorage.getItem('token');
-      if (!token) {
-        token = 'dummy-token';
-        localStorage.setItem('token', token);
-      }
-
-      const response = await fetch('/api/permissions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ permissions: editablePermissions })
+      // Convert new permission structure to backend format
+      const backendPermissions = {};
+      
+      Object.keys(editablePermissions).forEach(pageId => {
+        backendPermissions[pageId] = {};
+        
+        Object.keys(editablePermissions[pageId]).forEach(role => {
+          const permissions = editablePermissions[pageId][role];
+          
+          // Convert checkbox permissions to backend format
+          let access = false;
+          let level = 'none';
+          
+          // Determine access level based on permission combinations
+          if (permissions.create || permissions.edit || permissions.delete || permissions.approve || permissions.view) {
+            access = true;
+            
+            if (permissions.create && permissions.edit && permissions.delete && permissions.approve) {
+              level = 'full';
+            } else if (permissions.create && permissions.edit && permissions.delete) {
+              level = 'full'; // Consider this full access even without approve
+            } else if (permissions.create && (permissions.edit || permissions.delete || permissions.approve)) {
+              level = 'full'; // Any create permission with other management permissions = full
+            } else if (permissions.delete || permissions.approve) {
+              level = 'full'; // Delete or approve always requires full access
+            } else if (permissions.edit) {
+              level = 'edit'; // Edit without create/delete/approve = edit level
+            } else if (permissions.view) {
+              level = 'view';
+            }
+          }
+          
+          backendPermissions[pageId][role] = { access, level };
+        });
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to save permissions');
-      }
+      console.log('Sending permissions to backend:', JSON.stringify(backendPermissions, null, 2));
       
-      const data = await response.json();
-      console.log('Save response:', data);
+      const response = await apiService.saveCustomPermissions(backendPermissions);
+      console.log('Save response:', response);
       
-      if (data.success) {
+      if (response.success) {
         alert('Permissions saved successfully!');
-        setCustomPermissions(editablePermissions);
+        setCustomPermissions(backendPermissions);
         setHasChanges(false);
         setIsEditing(false);
       } else {
-        throw new Error(data.message || 'Failed to save permissions');
+        throw new Error(response.message || 'Failed to save permissions');
       }
     } catch (error) {
       console.error('Error saving permissions:', error);
@@ -367,33 +417,16 @@ const PermissionsManagement = () => {
       try {
         setLoading(true);
         
-        let token = localStorage.getItem('token');
-        if (!token) {
-          token = 'dummy-token';
-          localStorage.setItem('token', token);
-        }
-
-        const response = await fetch('/api/permissions', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const response = await apiService.resetPermissions();
         
-        if (!response.ok) {
-          throw new Error('Failed to reset permissions');
-        }
-        
-        const data = await response.json();
-        if (data.success) {
+        if (response.success) {
           setCustomPermissions({});
           setEditablePermissions(permissions);
           setHasChanges(false);
           setIsEditing(false);
           alert('Permissions reset to default successfully!');
         } else {
-          throw new Error(data.message || 'Failed to reset permissions');
+          throw new Error(response.message || 'Failed to reset permissions');
         }
       } catch (error) {
         console.error('Error resetting permissions:', error);
@@ -407,31 +440,6 @@ const PermissionsManagement = () => {
   // Get current permissions (editable or default)
   const getCurrentPermissions = () => {
     return Object.keys(editablePermissions).length > 0 ? editablePermissions : permissions;
-  };
-
-  // Editable Permission Cell Component
-  const EditablePermissionCell = ({ pageId, role, access }) => {
-    if (!isEditing) {
-      return (
-        <div className={`inline-flex items-center justify-center px-3 py-2 rounded-full text-xs font-medium transition-all hover:scale-105 ${getAccessColor(access)} border`}>
-          <span className="mr-1">{getAccessIcon(access)}</span>
-          <span className="hidden sm:inline">{getAccessText(access)}</span>
-        </div>
-      );
-    }
-
-    return (
-      <select
-        value={access.access ? access.level : 'none'}
-        onChange={(e) => handlePermissionChange(pageId, role, e.target.value)}
-        className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-      >
-        <option value="none">🚫 No Access</option>
-        <option value="view">👁️ View Only</option>
-        <option value="edit">✏️ Edit Only</option>
-        <option value="full">✅ Full Access</option>
-      </select>
-    );
   };
 
   // Only super admin can access this page
@@ -459,153 +467,47 @@ const PermissionsManagement = () => {
         </p>
       </div>
 
-      {/* Role Selector */}
+      {/* Enhanced Role Selector */}
       <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
         <div className="flex items-center space-x-4 mb-4">
           <Users className="h-5 w-5 text-gray-600" />
-          <h2 className="text-xl font-semibold">View Permissions by Role</h2>
+          <h2 className="text-xl font-semibold">Select User Role to Manage</h2>
         </div>
-        <div className="flex space-x-2">
-          {['super_admin', 'admin', 'manager', 'user'].map(role => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {availableRoles.map(role => (
             <button
-              key={role}
-              onClick={() => setSelectedRole(role)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedRole === role
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              key={role.id}
+              onClick={() => setSelectedRole(role.id)}
+              className={`p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${
+                selectedRole === role.id
+                  ? 'border-blue-500 bg-blue-50 shadow-md transform scale-105'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
-              {role.replace('_', ' ').toUpperCase()}
+              <span className="text-2xl">{role.icon}</span>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${role.color}`}>
+                {role.name}
+              </span>
+              {selectedRole === role.id && (
+                <span className="text-xs text-blue-600 font-medium">Selected</span>
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Permissions Overview for Selected Role */}
-      <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">
-            Permissions for: 
-            <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(selectedRole)}`}>
-              {selectedRole.replace('_', ' ').toUpperCase()}
-            </span>
-          </h2>
-        </div>
-
-        {Object.entries(groupedPages).map(([category, pages]) => (
-          <div key={category} className="mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              {category}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pages.map(page => {
-                const currentPermissions = getCurrentPermissions();
-                const access = currentPermissions[page.id] ? currentPermissions[page.id][selectedRole] : { access: false, level: 'none' };
-                return (
-                  <div
-                    key={page.id}
-                    className={`p-4 rounded-lg border ${getAccessColor(access)}`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">{page.icon}</span>
-                        <h4 className="font-medium">{page.name}</h4>
-                      </div>
-                      {getAccessIcon(access)}
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{page.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium">
-                        {getAccessText(access)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Quick Actions for Bulk Permission Changes */}
-      {isEditing && (
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Settings className="w-5 h-5 mr-2" />
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button
-              onClick={() => {
-                const updatedPermissions = { ...editablePermissions };
-                systemPages.forEach(page => {
-                  updatedPermissions[page.id] = {
-                    ...updatedPermissions[page.id],
-                    user: { access: true, level: 'view' }
-                  };
-                });
-                setEditablePermissions(updatedPermissions);
-                setHasChanges(true);
-              }}
-              className="p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-green-800 font-medium"
-            >
-              👁️ Give Users View Access to All
-            </button>
-            <button
-              onClick={() => {
-                const updatedPermissions = { ...editablePermissions };
-                systemPages.forEach(page => {
-                  updatedPermissions[page.id] = {
-                    ...updatedPermissions[page.id],
-                    user: { access: false, level: 'none' }
-                  };
-                });
-                setEditablePermissions(updatedPermissions);
-                setHasChanges(true);
-              }}
-              className="p-3 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-red-800 font-medium"
-            >
-              🚫 Remove All User Access
-            </button>
-            <button
-              onClick={() => {
-                const updatedPermissions = { ...editablePermissions };
-                systemPages.forEach(page => {
-                  updatedPermissions[page.id] = {
-                    ...updatedPermissions[page.id],
-                    manager: { access: true, level: 'full' }
-                  };
-                });
-                setEditablePermissions(updatedPermissions);
-                setHasChanges(true);
-              }}
-              className="p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-blue-800 font-medium"
-            >
-              ✅ Give Managers Full Access
-            </button>
-            <button
-              onClick={resetToDefault}
-              className="p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-gray-800 font-medium"
-            >
-              🔄 Reset to Default Permissions
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Enhanced Permission Matrix Table */}
+      {/* Enhanced Permissions Matrix for Selected Role */}
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center">
                 <Shield className="w-6 h-6 mr-2" />
-                Complete Permission Matrix
+                Permissions Matrix for {availableRoles.find(r => r.id === selectedRole)?.name}
                 {isEditing && <span className="ml-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-medium">EDITING MODE</span>}
               </h2>
               <p className="text-blue-100 text-sm mt-1">
-                {isEditing ? 'Click on permission levels to modify access rights' : 'Comprehensive view of all system pages and user role permissions'}
+                {isEditing ? 'Check/uncheck boxes to modify permissions for this role' : `View all permissions for ${availableRoles.find(r => r.id === selectedRole)?.name} role`}
               </p>
             </div>
             <div className="flex space-x-2">
@@ -654,30 +556,14 @@ const PermissionsManagement = () => {
                     Page / Feature
                   </div>
                 </th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-purple-700 uppercase tracking-wider">
-                  <div className="flex flex-col items-center">
-                    <span className="mb-1">👑</span>
-                    <span className="bg-purple-100 px-2 py-1 rounded-full">Super Admin</span>
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-red-700 uppercase tracking-wider">
-                  <div className="flex flex-col items-center">
-                    <span className="mb-1">🛠️</span>
-                    <span className="bg-red-100 px-2 py-1 rounded-full">Admin</span>
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  <div className="flex flex-col items-center">
-                    <span className="mb-1">📋</span>
-                    <span className="bg-blue-100 px-2 py-1 rounded-full">Manager</span>
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-green-700 uppercase tracking-wider">
-                  <div className="flex flex-col items-center">
-                    <span className="mb-1">👤</span>
-                    <span className="bg-green-100 px-2 py-1 rounded-full">User</span>
-                  </div>
-                </th>
+                {permissionTypes.map(permission => (
+                  <th key={permission.id} className="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <div className="flex flex-col items-center">
+                      <span className={`mb-1 text-lg ${permission.color}`}>{permission.icon}</span>
+                      <span className="text-xs">{permission.name}</span>
+                    </div>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -685,7 +571,7 @@ const PermissionsManagement = () => {
                 <React.Fragment key={category}>
                   {/* Category Header Row */}
                   <tr className="bg-gray-100">
-                    <td colSpan="5" className="px-6 py-3 text-sm font-bold text-gray-800 bg-gradient-to-r from-gray-200 to-gray-100">
+                    <td colSpan={permissionTypes.length + 1} className="px-6 py-3 text-sm font-bold text-gray-800 bg-gradient-to-r from-gray-200 to-gray-100">
                       <div className="flex items-center">
                         <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
                         {category.toUpperCase()}
@@ -695,6 +581,10 @@ const PermissionsManagement = () => {
                   {/* Category Pages */}
                   {pages.map((page, index) => {
                     const currentPermissions = getCurrentPermissions();
+                    const pagePermissions = currentPermissions[page.id] && currentPermissions[page.id][selectedRole] 
+                      ? currentPermissions[page.id][selectedRole] 
+                      : getPageAccess(page.id, selectedRole);
+                    
                     return (
                       <tr key={page.id} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="px-6 py-4 border-r border-gray-200">
@@ -706,11 +596,32 @@ const PermissionsManagement = () => {
                             </div>
                           </div>
                         </td>
-                        {['super_admin', 'admin', 'manager', 'user'].map(role => {
-                          const access = currentPermissions[page.id] ? currentPermissions[page.id][role] : { access: false, level: 'none' };
+                        {permissionTypes.map(permission => {
+                          const hasPermission = pagePermissions[permission.id] || false;
                           return (
-                            <td key={role} className="px-6 py-4 text-center">
-                              <EditablePermissionCell pageId={page.id} role={role} access={access} />
+                            <td key={permission.id} className="px-4 py-4 text-center">
+                              {isEditing ? (
+                                <label className="inline-flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={hasPermission}
+                                    onChange={(e) => handlePermissionChange(page.id, selectedRole, permission.id, e.target.checked)}
+                                    className="form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out rounded focus:ring-blue-500 focus:ring-2"
+                                  />
+                                </label>
+                              ) : (
+                                <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${
+                                  hasPermission 
+                                    ? 'bg-green-100 text-green-600' 
+                                    : 'bg-gray-100 text-gray-400'
+                                }`}>
+                                  {hasPermission ? (
+                                    <Check className="w-4 h-4" />
+                                  ) : (
+                                    <X className="w-4 h-4" />
+                                  )}
+                                </div>
+                              )}
                             </td>
                           );
                         })}
@@ -723,40 +634,29 @@ const PermissionsManagement = () => {
           </table>
         </div>
         
-        {/* Enhanced Summary Statistics */}
+        {/* Permission Summary */}
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
             <div className="bg-white rounded-lg p-3 shadow-sm">
               <div className="text-2xl font-bold text-gray-900">{systemPages.length}</div>
               <div className="text-xs text-gray-500">Total Pages</div>
             </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm">
-              <div className="text-2xl font-bold text-green-600">
-                {systemPages.filter(page => {
-                  const currentPermissions = getCurrentPermissions();
-                  return currentPermissions[page.id] && currentPermissions[page.id]['user'] && currentPermissions[page.id]['user'].access;
-                }).length}
-              </div>
-              <div className="text-xs text-gray-500">User Accessible</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm">
-              <div className="text-2xl font-bold text-blue-600">
-                {systemPages.filter(page => {
-                  const currentPermissions = getCurrentPermissions();
-                  return currentPermissions[page.id] && currentPermissions[page.id]['manager'] && currentPermissions[page.id]['manager'].access;
-                }).length}
-              </div>
-              <div className="text-xs text-gray-500">Manager Accessible</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 shadow-sm">
-              <div className="text-2xl font-bold text-red-600">
-                {systemPages.filter(page => {
-                  const currentPermissions = getCurrentPermissions();
-                  return currentPermissions[page.id] && currentPermissions[page.id]['admin'] && currentPermissions[page.id]['admin'].access;
-                }).length}
-              </div>
-              <div className="text-xs text-gray-500">Admin Accessible</div>
-            </div>
+            {permissionTypes.map(permission => {
+              const currentPermissions = getCurrentPermissions();
+              const count = systemPages.filter(page => {
+                const pagePermissions = currentPermissions[page.id] && currentPermissions[page.id][selectedRole] 
+                  ? currentPermissions[page.id][selectedRole] 
+                  : getPageAccess(page.id, selectedRole);
+                return pagePermissions[permission.id];
+              }).length;
+              
+              return (
+                <div key={permission.id} className="bg-white rounded-lg p-3 shadow-sm">
+                  <div className={`text-2xl font-bold ${permission.color}`}>{count}</div>
+                  <div className="text-xs text-gray-500">{permission.name} Access</div>
+                </div>
+              );
+            })}
           </div>
           {hasChanges && (
             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -769,59 +669,113 @@ const PermissionsManagement = () => {
         </div>
       </div>
 
-      {/* Enhanced Permission Levels Legend */}
+      {/* Quick Actions for Bulk Permission Changes */}
+      {isEditing && (
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <Settings className="w-5 h-5 mr-2" />
+            Quick Actions for {availableRoles.find(r => r.id === selectedRole)?.name}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button
+              onClick={() => {
+                const updatedPermissions = { ...editablePermissions };
+                systemPages.forEach(page => {
+                  if (!updatedPermissions[page.id]) updatedPermissions[page.id] = {};
+                  updatedPermissions[page.id][selectedRole] = {
+                    create: false, view: true, edit: false, delete: false, approve: false
+                  };
+                });
+                setEditablePermissions(updatedPermissions);
+                setHasChanges(true);
+              }}
+              className="p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-blue-800 font-medium"
+            >
+              👁️ Grant View Only Access
+            </button>
+            <button
+              onClick={() => {
+                const updatedPermissions = { ...editablePermissions };
+                systemPages.forEach(page => {
+                  if (!updatedPermissions[page.id]) updatedPermissions[page.id] = {};
+                  updatedPermissions[page.id][selectedRole] = {
+                    create: true, view: true, edit: true, delete: false, approve: false
+                  };
+                });
+                setEditablePermissions(updatedPermissions);
+                setHasChanges(true);
+              }}
+              className="p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-green-800 font-medium"
+            >
+              ✏️ Grant Create/Edit Access
+            </button>
+            <button
+              onClick={() => {
+                const updatedPermissions = { ...editablePermissions };
+                systemPages.forEach(page => {
+                  if (!updatedPermissions[page.id]) updatedPermissions[page.id] = {};
+                  updatedPermissions[page.id][selectedRole] = {
+                    create: true, view: true, edit: true, delete: true, approve: true
+                  };
+                });
+                setEditablePermissions(updatedPermissions);
+                setHasChanges(true);
+              }}
+              className="p-3 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors text-purple-800 font-medium"
+            >
+              ✅ Grant Full Access
+            </button>
+            <button
+              onClick={() => {
+                const updatedPermissions = { ...editablePermissions };
+                systemPages.forEach(page => {
+                  if (!updatedPermissions[page.id]) updatedPermissions[page.id] = {};
+                  updatedPermissions[page.id][selectedRole] = {
+                    create: false, view: false, edit: false, delete: false, approve: false
+                  };
+                });
+                setEditablePermissions(updatedPermissions);
+                setHasChanges(true);
+              }}
+              className="p-3 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-red-800 font-medium"
+            >
+              🚫 Remove All Access
+            </button>
+            <button
+              onClick={resetToDefault}
+              className="p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-gray-800 font-medium"
+            >
+              🔄 Reset to Default
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Permission Types Legend */}
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-6 py-4">
           <h3 className="text-lg font-bold text-white flex items-center">
             <Info className="w-5 h-5 mr-2" />
-            Permission Levels Guide
+            Permission Types Guide
           </h3>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex justify-center mb-2">
-                <Check className="w-8 h-8 text-green-500" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            {permissionTypes.map(permission => (
+              <div key={permission.id} className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex justify-center mb-2">
+                  <span className={`text-3xl ${permission.color}`}>{permission.icon}</span>
+                </div>
+                <h4 className="font-semibold text-gray-800 mb-1">{permission.name}</h4>
+                <p className="text-sm text-gray-600">
+                  {permission.id === 'create' && 'Add new records and data'}
+                  {permission.id === 'view' && 'Browse and see information'}
+                  {permission.id === 'edit' && 'Modify existing records'}
+                  {permission.id === 'delete' && 'Remove records permanently'}
+                  {permission.id === 'approve' && 'Review and approve changes'}
+                </p>
               </div>
-              <h4 className="font-semibold text-green-800 mb-1">Full Access</h4>
-              <p className="text-sm text-green-600">Create, Read, Update, Delete</p>
-              <div className="mt-2 text-xs bg-green-100 px-2 py-1 rounded text-green-700">
-                Complete Control
-              </div>
-            </div>
-            
-            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex justify-center mb-2">
-                <Settings className="w-8 h-8 text-blue-500" />
-              </div>
-              <h4 className="font-semibold text-blue-800 mb-1">Edit Access</h4>
-              <p className="text-sm text-blue-600">Read, Update Only</p>
-              <div className="mt-2 text-xs bg-blue-100 px-2 py-1 rounded text-blue-700">
-                Modify Existing
-              </div>
-            </div>
-            
-            <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex justify-center mb-2">
-                <Info className="w-8 h-8 text-gray-500" />
-              </div>
-              <h4 className="font-semibold text-gray-800 mb-1">View Only</h4>
-              <p className="text-sm text-gray-600">Read Only Access</p>
-              <div className="mt-2 text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
-                Browse & View
-              </div>
-            </div>
-            
-            <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-              <div className="flex justify-center mb-2">
-                <X className="w-8 h-8 text-red-500" />
-              </div>
-              <h4 className="font-semibold text-red-800 mb-1">No Access</h4>
-              <p className="text-sm text-red-600">Completely Restricted</p>
-              <div className="mt-2 text-xs bg-red-100 px-2 py-1 rounded text-red-700">
-                Access Denied
-              </div>
-            </div>
+            ))}
           </div>
           
           {/* Role Hierarchy Info */}
@@ -830,23 +784,22 @@ const PermissionsManagement = () => {
               <Users className="w-5 h-5 mr-2" />
               Role Hierarchy & Responsibilities
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-              <div className="bg-white p-3 rounded border-l-4 border-purple-400">
-                <div className="font-medium text-purple-800">👑 Super Admin</div>
-                <div className="text-purple-600 text-xs mt-1">System owner, full control over everything</div>
-              </div>
-              <div className="bg-white p-3 rounded border-l-4 border-red-400">
-                <div className="font-medium text-red-800">🛠️ Admin</div>
-                <div className="text-red-600 text-xs mt-1">Manages users, inventory, and business operations</div>
-              </div>
-              <div className="bg-white p-3 rounded border-l-4 border-blue-400">
-                <div className="font-medium text-blue-800">📋 Manager</div>
-                <div className="text-blue-600 text-xs mt-1">Handles day-to-day operations and inventory</div>
-              </div>
-              <div className="bg-white p-3 rounded border-l-4 border-green-400">
-                <div className="font-medium text-green-800">👤 User</div>
-                <div className="text-green-600 text-xs mt-1">Basic access to view reports and data</div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
+              {availableRoles.map(role => (
+                <div key={role.id} className="bg-white p-3 rounded border-l-4 border-blue-400">
+                  <div className="flex items-center mb-1">
+                    <span className="mr-2">{role.icon}</span>
+                    <span className="font-medium text-gray-800">{role.name}</span>
+                  </div>
+                  <div className="text-gray-600 text-xs mt-1">
+                    {role.id === 'super_admin' && 'System owner, full control over everything'}
+                    {role.id === 'admin' && 'Manages users, inventory, and business operations'}
+                    {role.id === 'manager' && 'Handles day-to-day operations and inventory'}
+                    {role.id === 'user' && 'Basic access to view reports and data'}
+                    {role.id === 'guest' && 'Limited read-only access to public information'}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

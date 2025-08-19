@@ -2,11 +2,9 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
-  // For development, always ensure we have a dummy token
-  let token = localStorage.getItem('token');
+  const token = localStorage.getItem('token');
   if (!token) {
-    token = 'dummy-token';
-    localStorage.setItem('token', token);
+    throw new Error('No authentication token found');
   }
   return {
     'Content-Type': 'application/json',

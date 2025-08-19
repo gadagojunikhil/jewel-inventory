@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Building2, Search, Phone, Mail, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Building2, Search, Phone, Mail, Star, Shield } from 'lucide-react';
+import usePermissions from '../../hooks/usePermissions';
 
 const VendorManagement = () => {
+  const { hasPermission, canAccessPage, getPermissionLevel } = usePermissions();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Permission checks
+  const canCreate = hasPermission('vendor-management', 'create');
+  const canEdit = hasPermission('vendor-management', 'edit');
+  const canDelete = hasPermission('vendor-management', 'delete');
+  const permissionLevel = getPermissionLevel('vendor-management');
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
@@ -225,14 +233,29 @@ const VendorManagement = () => {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Vendor Details</h2>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Add Vendor
-        </button>
+        <div>
+          <h2 className="text-2xl font-bold">Vendor Details</h2>
+          <p className="text-gray-600 text-sm mt-1">
+            Permission Level: 
+            <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+              {permissionLevel.toUpperCase()} ACCESS
+            </span>
+          </p>
+        </div>
+        {canCreate ? (
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Add Vendor
+          </button>
+        ) : (
+          <div className="bg-gray-100 text-gray-500 px-4 py-2 rounded-lg flex items-center gap-2">
+            <Shield size={20} />
+            Add Vendor (No Permission)
+          </div>
+        )}
       </div>
 
       {/* Search Bar */}
@@ -292,18 +315,40 @@ const VendorManagement = () => {
                     <div className="text-sm text-gray-900">{vendor.city}{vendor.city && vendor.country ? ', ' : ''}{vendor.country}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => setEditingVendor(vendor)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteVendor(vendor.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {canEdit ? (
+                      <button
+                        onClick={() => setEditingVendor(vendor)}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                        title="Edit vendor"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="text-gray-400 cursor-not-allowed mr-3"
+                        title="No edit permission"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    )}
+                    {canDelete ? (
+                      <button
+                        onClick={() => handleDeleteVendor(vendor.id)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Delete vendor"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="text-gray-400 cursor-not-allowed"
+                        title="No delete permission"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

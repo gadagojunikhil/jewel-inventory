@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import { Search, Edit2, Trash2, Package } from 'lucide-react';
+import usePermissions from '../../hooks/usePermissions';
 
 const EditInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCategories }) => {
+  const { hasPermission, getPermissionLevel } = usePermissions();
+  
+  // Permission checks for edit-inventory page
+  const canEdit = hasPermission('edit-inventory', 'edit');
+  const canDelete = hasPermission('edit-inventory', 'delete');
+  const canView = hasPermission('edit-inventory', 'view');
+  const permissionLevel = getPermissionLevel('edit-inventory');
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -127,13 +136,25 @@ const EditInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCate
                     <div className="flex space-x-2">
                       <button
                         onClick={() => showEditConfirmation(jewelry)}
-                        className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                        disabled={!canEdit}
+                        className={`p-2 rounded ${
+                          canEdit 
+                            ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        title={!canEdit ? `No permission to edit inventory (Level: ${permissionLevel})` : 'Edit jewelry'}
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => showArchiveConfirmation(jewelry)}
-                        className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
+                        disabled={!canDelete}
+                        className={`p-2 rounded ${
+                          canDelete 
+                            ? 'bg-red-500 text-white hover:bg-red-600' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        title={!canDelete ? `No permission to archive inventory (Level: ${permissionLevel})` : 'Archive jewelry'}
                       >
                         <Trash2 size={16} />
                       </button>

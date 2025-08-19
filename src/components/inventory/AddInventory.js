@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
 import { Plus, Save, X, Gem, Trash2 } from 'lucide-react';
+import usePermissions from '../../hooks/usePermissions';
 
 const AddInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCategories }) => {
+  const { hasPermission, getPermissionLevel } = usePermissions();
+  
+  // Permission checks for add-inventory page
+  const canCreate = hasPermission('add-inventory', 'create');
+  const canView = hasPermission('add-inventory', 'view');
+  const permissionLevel = getPermissionLevel('add-inventory');
+  
   const [showAddJewelryForm, setShowAddJewelryForm] = useState(false);
   const [newJewelry, setNewJewelry] = useState({
     name: '',
@@ -95,11 +103,19 @@ const AddInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCateg
       <div className="bg-white p-6 rounded-lg shadow-md">
         <button
           onClick={() => setShowAddJewelryForm(true)}
-          className="w-full bg-blue-500 text-white p-8 rounded-lg hover:bg-blue-600 flex flex-col items-center space-y-3"
+          disabled={!canCreate}
+          className={`w-full p-8 rounded-lg flex flex-col items-center space-y-3 ${
+            canCreate 
+              ? 'bg-blue-500 text-white hover:bg-blue-600' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          title={!canCreate ? `No permission to add inventory (Level: ${permissionLevel})` : ''}
         >
           <Plus size={48} />
           <span className="text-xl font-semibold">Add New Jewelry Piece</span>
-          <span className="text-sm opacity-90">Click to open the jewelry creation form</span>
+          <span className="text-sm opacity-90">
+            {canCreate ? 'Click to open the jewelry creation form' : 'You do not have permission to add inventory'}
+          </span>
         </button>
       </div>
 

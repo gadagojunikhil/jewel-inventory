@@ -4,41 +4,17 @@ import {
   Users, Gem, Plus, Edit2, DollarSign, Eye, ChevronDown, Building2, Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import usePermissions from '../../hooks/usePermissions';
 
 const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }) => {
   const { user } = useAuth();
+  const { canAccessPage } = usePermissions();
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  // Role-based access control
-  const hasAccess = (feature) => {
+  // Permission-based access control
+  const hasAccess = (pageId) => {
     if (!user) return false;
-    
-    const { role } = user;
-    
-    switch (feature) {
-      case 'user-management':
-      case 'permissions-management':
-        return role === 'super_admin'; // Only super admin can manage users and permissions
-      case 'material-management':
-      case 'category-management':
-      case 'vendor-management':
-        return ['super_admin', 'admin', 'manager'].includes(role);
-      case 'add-inventory':
-      case 'edit-inventory':
-        return ['super_admin', 'admin', 'manager'].includes(role);
-      case 'view-inventory':
-      case 'available-stock':
-      case 'vendor-stock':
-        return true; // All roles can view
-      case 'indian-billing':
-      case 'us-billing':
-        return ['super_admin', 'admin', 'manager'].includes(role);
-      case 'dollar-rate':
-      case 'data-sync':
-        return ['super_admin', 'admin', 'manager'].includes(role);
-      default:
-        return true;
-    }
+    return canAccessPage(pageId);
   };
 
   const menuItems = [
