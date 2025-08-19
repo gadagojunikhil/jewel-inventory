@@ -349,3 +349,5 @@ const AddInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCateg
     </div>
   );
 };
+
+export default AddInventory;

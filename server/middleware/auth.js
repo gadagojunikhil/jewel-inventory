@@ -5,23 +5,41 @@ const auth = async (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
-      throw new Error();
+      return res.status(401).json({ error: 'Access token required' });
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.id;
-    req.userRole = decoded.role;
+    // Temporary: Allow dummy token for development
+    if (token === 'dummy-token') {
+      req.userId = 1;
+      req.userRole = 'super_admin';
+      req.username = 'admin';
+      req.user = { id: 1, role: 'super_admin', username: 'admin' };
+      next();
+      return;
+    }
     
-    next();
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      req.userId = decoded.userId;
+      req.userRole = decoded.role;
+      req.username = decoded.username;
+      req.fullName = decoded.fullName;
+      
+      next();
+    } catch (jwtError) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    
   } catch (error) {
-    res.status(401).json({ error: 'Please authenticate' });
+    console.error('Auth middleware error:', error);
+    res.status(401).json({ error: 'Authentication failed' });
   }
 };
 
 const adminAuth = async (req, res, next) => {
   try {
-    if (req.userRole !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
+    if (req.userRole !== 'admin' && req.userRole !== 'super_admin' && req.userRole !== 'manager') {
+      return res.status(403).json({ error: 'Admin or Manager access required' });
     }
     next();
   } catch (error) {
@@ -29,4 +47,26 @@ const adminAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { auth, adminAuth };
+const managerAuth = async (req, res, next) => {
+  try {
+    if (req.userRole !== 'manager' && req.userRole !== 'admin' && req.userRole !== 'super_admin') {
+      return res.status(403).json({ error: 'Manager access required' });
+    }
+    next();
+  } catch (error) {
+    res.status(403).json({ error: 'Forbidden' });
+  }
+};
+
+const superAdminAuth = async (req, res, next) => {
+  try {
+    if (req.userRole !== 'super_admin') {
+      return res.status(403).json({ error: 'Super admin access required' });
+    }
+    next();
+  } catch (error) {
+    res.status(403).json({ error: 'Forbidden' });
+  }
+};
+
+module.exports = { auth, adminAuth, managerAuth, superAdminAuth };

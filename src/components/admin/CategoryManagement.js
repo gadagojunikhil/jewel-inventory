@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Package, ChevronDown, ChevronRight, Gem, Award } from 'lucide-react';
 
 const CategoryManagement = ({
-  jewelryCategories,
-  setJewelryCategories
+  jewelryCategories = [],
+  setJewelryCategories = () => {}
 }) => {
   const [showCreateNewMaterial, setShowCreateNewMaterial] = useState(false);
   const [newMaterialName, setNewMaterialName] = useState('');

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Gem, Package, DollarSign, Users } from 'lucide-react';
 
-const Dashboard = ({ materials, jewelryPieces, jewelryCategories, users }) => {
+const Dashboard = ({ materials = [], jewelryPieces = [], jewelryCategories = [], users = [] }) => {
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

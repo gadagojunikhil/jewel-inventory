@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Gem, Search } from 'lucide-react';
-import { useMaterials } from '../../hooks/useApiData';
+import { useAuth } from '../../contexts/AuthContext';
 
 const MaterialManagement = () => {
-  const { 
-    materials, 
-    loading, 
-    error, 
-    addMaterial: apiAddMaterial, 
-    updateMaterial: apiUpdateMaterial, 
-    deleteMaterial: apiDeleteMaterial 
-  } = useMaterials();
+  const { user } = useAuth();
+  const [materials, setMaterials] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Role-based permissions
+  const canAdd = ['super_admin', 'admin'].includes(user?.role);
+  const canEdit = ['super_admin', 'admin', 'manager'].includes(user?.role);
+  const canDelete = ['super_admin', 'admin'].includes(user?.role);
   const [showAddMaterialForm, setShowAddMaterialForm] = useState(false);
   const [editingMaterialId, setEditingMaterialId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,6 +32,116 @@ const MaterialManagement = () => {
     salePrice: 0,
     unit: 'each'
   });
+
+  // Fetch materials on component mount
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        let token = localStorage.getItem('token');
+        if (!token) {
+          token = 'dummy-token';
+          localStorage.setItem('token', token);
+        }
+
+        const response = await fetch('/api/materials', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch materials');
+        }
+        
+        const data = await response.json();
+        setMaterials(data || []);
+      } catch (err) {
+        setError(err.message);
+        console.error('Materials fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMaterials();
+  }, []);
+
+  // API functions
+  const apiAddMaterial = async (material) => {
+    let token = localStorage.getItem('token');
+    if (!token) {
+      token = 'dummy-token';
+      localStorage.setItem('token', token);
+    }
+
+    const response = await fetch('/api/materials', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(material)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to add material');
+    }
+    
+    const newMaterial = await response.json();
+    setMaterials(prev => [...prev, newMaterial]);
+    return newMaterial;
+  };
+
+  const apiUpdateMaterial = async (id, material) => {
+    let token = localStorage.getItem('token');
+    if (!token) {
+      token = 'dummy-token';
+      localStorage.setItem('token', token);
+    }
+
+    const response = await fetch(`/api/materials/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(material)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update material');
+    }
+    
+    const updatedMaterial = await response.json();
+    setMaterials(prev => prev.map(m => m.id === id ? updatedMaterial : m));
+    return updatedMaterial;
+  };
+
+  const apiDeleteMaterial = async (id) => {
+    let token = localStorage.getItem('token');
+    if (!token) {
+      token = 'dummy-token';
+      localStorage.setItem('token', token);
+    }
+
+    const response = await fetch(`/api/materials/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to delete material');
+    }
+    
+    setMaterials(prev => prev.filter(m => m.id !== id));
+  };
 
   const deleteMaterial = async (id) => {
   try {
@@ -211,13 +322,15 @@ const MaterialManagement = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Material Management</h2>
-        <button
-          onClick={() => setShowAddMaterialForm(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2"
-        >
-          <Plus size={20} />
-          <span>Add Material</span>
-        </button>
+        {canAdd && (
+          <button
+            onClick={() => setShowAddMaterialForm(true)}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2"
+          >
+            <Plus size={20} />
+            <span>Add Material</span>
+          </button>
+        )}
       </div>
 
       {/* Search and Filter Section */}
@@ -516,20 +629,24 @@ const MaterialManagement = () => {
                       </div>
                     ) : (
                       <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEditMaterial(material)}
-                          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                          title="Edit material"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteMaterial(material.id)}
-                          className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
-                          title="Delete material"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => handleEditMaterial(material)}
+                            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                            title="Edit material"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button 
+                            onClick={() => handleDeleteMaterial(material.id)}
+                            className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
+                            title="Delete material"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>

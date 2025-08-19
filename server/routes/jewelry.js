@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { body, validationResult } = require('express-validator');
 const pool = require('../config/database');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth, managerAuth } = require('../middleware/auth');
 
 // Get all jewelry pieces with filters
 router.get('/', async (req, res) => {
@@ -21,34 +21,40 @@ router.get('/', async (req, res) => {
     let query = `
       SELECT 
         j.*,
-        c.name as category_name,
-        json_agg(
-          json_build_object(
-            'material_id', jm.material_id,
-            'material_name', m.name,
-            'material_code', m.code,
-            'quantity', jm.quantity,
-            'unit', m.unit,
-            'cost_per_unit', jm.cost_per_unit,
-            'total_cost', jm.total_cost
-          )
-        ) FILTER (WHERE jm.id IS NOT NULL) as materials
+        c.name as category_name
       FROM jewelry_pieces j
       LEFT JOIN categories c ON j.category_id = c.id
-      LEFT JOIN jewelry_materials jm ON j.id = jm.jewelry_id
-      LEFT JOIN materials m ON jm.material_id = m.id
-      WHERE j.id = $1
-      GROUP BY j.id, c.name
+      WHERE 1=1
     `;
     
-    const completeResult = await pool.query(completeQuery, [id]);
-    res.json(completeResult.rows[0]);
+    const queryParams = [];
+    let paramCount = 0;
+    
+    if (category) {
+      paramCount++;
+      query += ` AND j.category_id = $${paramCount}`;
+      queryParams.push(category);
+    }
+    
+    if (status) {
+      paramCount++;
+      query += ` AND j.status = $${paramCount}`;
+      queryParams.push(status);
+    }
+    
+    if (search) {
+      paramCount++;
+      query += ` AND (j.name ILIKE $${paramCount} OR j.code ILIKE $${paramCount})`;
+      queryParams.push(`%${search}%`);
+    }
+    
+    query += ` ORDER BY j.${sortBy} ${order} LIMIT ${limit} OFFSET ${(page - 1) * limit}`;
+    
+    const result = await pool.query(query, queryParams);
+    res.json(result.rows);
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error(error);
     res.status(500).json({ error: 'Server error' });
-  } finally {
-    client.release();
   }
 });
 

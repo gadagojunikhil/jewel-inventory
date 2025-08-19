@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiService } from '../services/api';
+import api from '../services/api';
 
 // Custom hook for API-based data management
 export const useApiData = (apiMethod, dependencies = []) => {
@@ -40,11 +40,11 @@ export const useApiData = (apiMethod, dependencies = []) => {
 
 // Specific hooks for different data types
 export const useMaterials = () => {
-  const { data, loading, error, refresh, setData } = useApiData(apiService.getMaterials);
+  const { data, loading, error, refresh, setData } = useApiData(api.getMaterials);
 
   const addMaterial = useCallback(async (material) => {
     try {
-      const newMaterial = await apiService.createMaterial(material);
+      const newMaterial = await api.createMaterial(material);
       setData(prev => [...prev, newMaterial]);
       return newMaterial;
     } catch (err) {
@@ -55,7 +55,7 @@ export const useMaterials = () => {
 
   const updateMaterial = useCallback(async (id, material) => {
     try {
-      const updatedMaterial = await apiService.updateMaterial(id, material);
+      const updatedMaterial = await api.updateMaterial(id, material);
       setData(prev => prev.map(item => item.id === id ? updatedMaterial : item));
       return updatedMaterial;
     } catch (err) {
@@ -66,7 +66,7 @@ export const useMaterials = () => {
 
   const deleteMaterial = useCallback(async (id) => {
     try {
-      await apiService.deleteMaterial(id);
+      await api.deleteMaterial(id);
       setData(prev => prev.filter(item => item.id !== id));
     } catch (err) {
       console.error('Failed to delete material:', err);
@@ -86,11 +86,11 @@ export const useMaterials = () => {
 };
 
 export const useCategories = () => {
-  const { data, loading, error, refresh, setData } = useApiData(apiService.getCategories);
+  const { data, loading, error, refresh, setData } = useApiData(api.getCategories);
 
   const addCategory = useCallback(async (category) => {
     try {
-      const newCategory = await apiService.createCategory(category);
+      const newCategory = await api.createCategory(category);
       setData(prev => [...prev, newCategory]);
       return newCategory;
     } catch (err) {
@@ -101,7 +101,7 @@ export const useCategories = () => {
 
   const updateCategory = useCallback(async (id, category) => {
     try {
-      const updatedCategory = await apiService.updateCategory(id, category);
+      const updatedCategory = await api.updateCategory(id, category);
       setData(prev => prev.map(item => item.id === id ? updatedCategory : item));
       return updatedCategory;
     } catch (err) {
@@ -112,7 +112,7 @@ export const useCategories = () => {
 
   const deleteCategory = useCallback(async (id) => {
     try {
-      await apiService.deleteCategory(id);
+      await api.deleteCategory(id);
       setData(prev => prev.filter(item => item.id !== id));
     } catch (err) {
       console.error('Failed to delete category:', err);
@@ -132,11 +132,11 @@ export const useCategories = () => {
 };
 
 export const useJewelryPieces = () => {
-  const { data, loading, error, refresh, setData } = useApiData(apiService.getJewelryPieces);
+  const { data, loading, error, refresh, setData } = useApiData(api.getJewelryPieces);
 
   const addJewelryPiece = useCallback(async (piece) => {
     try {
-      const newPiece = await apiService.createJewelryPiece(piece);
+      const newPiece = await api.createJewelryPiece(piece);
       setData(prev => [...prev, newPiece]);
       return newPiece;
     } catch (err) {
@@ -147,7 +147,7 @@ export const useJewelryPieces = () => {
 
   const updateJewelryPiece = useCallback(async (id, piece) => {
     try {
-      const updatedPiece = await apiService.updateJewelryPiece(id, piece);
+      const updatedPiece = await api.updateJewelryPiece(id, piece);
       setData(prev => prev.map(item => item.id === id ? updatedPiece : item));
       return updatedPiece;
     } catch (err) {
@@ -158,7 +158,7 @@ export const useJewelryPieces = () => {
 
   const deleteJewelryPiece = useCallback(async (id) => {
     try {
-      await apiService.deleteJewelryPiece(id);
+      await api.deleteJewelryPiece(id);
       setData(prev => prev.filter(item => item.id !== id));
     } catch (err) {
       console.error('Failed to delete jewelry piece:', err);
@@ -178,11 +178,11 @@ export const useJewelryPieces = () => {
 };
 
 export const useUsers = () => {
-  const { data, loading, error, refresh, setData } = useApiData(apiService.getUsers);
+  const { data, loading, error, refresh, setData } = useApiData(api.getUsers);
 
   const addUser = useCallback(async (user) => {
     try {
-      const newUser = await apiService.createUser(user);
+      const newUser = await api.createUser(user);
       setData(prev => [...prev, newUser]);
       return newUser;
     } catch (err) {
@@ -193,7 +193,7 @@ export const useUsers = () => {
 
   const updateUser = useCallback(async (id, user) => {
     try {
-      const updatedUser = await apiService.updateUser(id, user);
+      const updatedUser = await api.updateUser(id, user);
       setData(prev => prev.map(item => item.id === id ? updatedUser : item));
       return updatedUser;
     } catch (err) {
@@ -204,7 +204,7 @@ export const useUsers = () => {
 
   const deleteUser = useCallback(async (id) => {
     try {
-      await apiService.deleteUser(id);
+      await api.deleteUser(id);
       setData(prev => prev.filter(item => item.id !== id));
     } catch (err) {
       console.error('Failed to delete user:', err);
@@ -220,5 +220,51 @@ export const useUsers = () => {
     addUser,
     updateUser,
     deleteUser
+  };
+};
+
+export const useVendors = () => {
+  const { data, loading, error, refresh, setData } = useApiData(api.getVendors);
+
+  const addVendor = useCallback(async (vendor) => {
+    try {
+      const newVendor = await api.createVendor(vendor);
+      setData(prev => [...prev, newVendor]);
+      return newVendor;
+    } catch (err) {
+      console.error('Failed to add vendor:', err);
+      throw err;
+    }
+  }, [setData]);
+
+  const updateVendor = useCallback(async (id, vendor) => {
+    try {
+      const updatedVendor = await api.updateVendor(id, vendor);
+      setData(prev => prev.map(item => item.id === id ? updatedVendor : item));
+      return updatedVendor;
+    } catch (err) {
+      console.error('Failed to update vendor:', err);
+      throw err;
+    }
+  }, [setData]);
+
+  const deleteVendor = useCallback(async (id) => {
+    try {
+      await api.deleteVendor(id);
+      setData(prev => prev.filter(item => item.id !== id));
+    } catch (err) {
+      console.error('Failed to delete vendor:', err);
+      throw err;
+    }
+  }, [setData]);
+
+  return {
+    vendors: data,
+    loading,
+    error,
+    refresh,
+    addVendor,
+    updateVendor,
+    deleteVendor
   };
 };

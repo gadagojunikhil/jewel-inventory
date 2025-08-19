@@ -14,18 +14,26 @@ A comprehensive full-stack jewelry inventory management application built with R
   - Bulk upload capability for inventory items
 
 - **🏗️ Material & Category Management**
-  - Comprehensive material library (Gold, Diamond, Stone, Silver)
+  - Comprehensive material library (Gold, Diamond, Stone, Silver, Platinum)
   - Hierarchical category structure with parent/child relationships
-  - Material cost and sale price tracking
-  - Unit-based material management (grams, carats, etc.)
+  - Material cost and sale price tracking with real-time calculations
+  - Unit-based material management (grams, carats, pieces, etc.)
   - Wastage and making charges configuration
+  - Advanced search and filtering by category
 
-- **👥 User Management**
-  - Role-based access control (Admin, Manager, User)
-  - Secure user authentication system
-  - Admin-only user creation and management
-  - User profile management
-  - Password change functionality
+- **👥 User Management & Permissions** 🆕
+  - **Role-based access control** with 4-tier hierarchy:
+    - **Super Admin**: Complete system control and user permissions management
+    - **Admin**: User management, inventory, and business operations
+    - **Manager**: Day-to-day operations and inventory management
+    - **User**: Basic access to view reports and data
+  - **Customizable Permission Matrix**: Edit access levels for any role and page combination
+  - **Dynamic Permission Management**: Real-time permission updates with database persistence
+  - **Quick Actions**: Bulk permission changes and default resets
+  - **Visual Permission Matrix**: Tabular view showing all pages vs roles with color-coded access levels
+  - Secure user authentication system with JWT
+  - Admin-controlled user creation and management
+  - User profile management and password changes
 
 - **🏢 Vendor Management**
   - Vendor contact information management
@@ -39,6 +47,7 @@ A comprehensive full-stack jewelry inventory management application built with R
   - Vendor stock analysis
   - Inventory valuation reports
   - Profit margin calculations
+  - Role-based report access control
 
 - **🔍 Advanced Search & Filter**
   - Multi-parameter search functionality
@@ -46,12 +55,30 @@ A comprehensive full-stack jewelry inventory management application built with R
   - Status-based filtering
   - Quick search by item code or name
 
+- **💰 Billing & Invoicing**
+  - Indian billing format with GST compliance
+  - US billing format for international clients
+  - Automated price calculations
+  - Material cost breakdowns
+
+- **🔧 Utilities & Data Management**
+  - Dollar rate management for currency conversion
+  - Data synchronization tools
+  - Bulk data operations
+  - Export capabilities
+
 ### Security Features
 - **🔐 Authentication & Authorization**
-  - JWT-based authentication
-  - Role-based permissions
+  - JWT-based authentication with secure token management
+  - **Granular permission system** with customizable access levels:
+    - 🚫 **No Access**: Complete restriction
+    - 👁️ **View Only**: Read-only access
+    - ✏️ **Edit Only**: Read and update permissions
+    - ✅ **Full Access**: Complete CRUD operations
+  - **Database-persisted permissions**: Custom permission overrides saved to PostgreSQL
   - Secure password hashing (bcrypt)
-  - Session management
+  - Session management with configurable expiration
+  - **Super Admin controls**: Only Super Admins can modify user permissions
 
 ## 🛠️ Technology Stack
 
@@ -84,84 +111,142 @@ A comprehensive full-stack jewelry inventory management application built with R
 ```
 jewelry-inventory-manager/
 ├── public/                       # Static public assets
-│   ├── index.html
-│   ├── favicon.ico
-│   └── manifest.json
+│   ├── index.html               # Main HTML template
+│   ├── favicon.ico              # Application favicon
+│   ├── logo192.png              # PWA icon (192x192)
+│   ├── logo512.png              # PWA icon (512x512)
+│   ├── manifest.json            # PWA manifest file
+│   └── robots.txt               # Search engine robots file
 ├── src/                         # Frontend React application
-│   ├── App.js                   # Main App component
+│   ├── App.js                   # Main App component with routing
+│   ├── App.css                  # Global application styles
 │   ├── index.js                 # React DOM entry point
+│   ├── index.css                # Base CSS with Tailwind imports
 │   ├── components/
 │   │   ├── admin/               # Admin panel components
-│   │   │   ├── CategoryManagement.js
-│   │   │   ├── MaterialManagement.js
-│   │   │   ├── UserManagement.js
-│   │   │   └── VendorManagement.js
+│   │   │   ├── CategoryManagement.js      # Category CRUD operations
+│   │   │   ├── MaterialManagement.js      # Material management with cost tracking
+│   │   │   ├── MaterialManagement_Enhanced.js  # Enhanced material features
+│   │   │   ├── PermissionsManagement.js   # 🆕 User Permissions Matrix System
+│   │   │   ├── UserManagement.js          # User CRUD and role management
+│   │   │   └── VendorManagement.js        # Vendor information management
 │   │   ├── auth/                # Authentication components
-│   │   │   └── Login.js
+│   │   │   └── Login.js                   # User login form with JWT
 │   │   ├── billing/             # Billing and invoicing
-│   │   │   ├── IndianBilling.js
-│   │   │   └── USBilling.js
+│   │   │   ├── IndianBilling.js          # GST-compliant Indian billing
+│   │   │   └── USBilling.js              # US format billing system
 │   │   ├── forms/               # Data entry forms
-│   │   │   ├── AddJewelryForm.js
-│   │   │   ├── EditJewelryForm.js
-│   │   │   └── MaterialForm.js
+│   │   │   ├── AddJewelryForm.js         # New jewelry item creation
+│   │   │   ├── EditJewelryForm.js        # Jewelry item editing
+│   │   │   └── MaterialForm.js           # Material creation/editing
 │   │   ├── inventory/           # Inventory management
-│   │   │   ├── AddInventory.js
-│   │   │   ├── EditInventory.js
-│   │   │   ├── UploadInventory.js
-│   │   │   ├── UploadJewelry.js
-│   │   │   └── ViewInventory.js
+│   │   │   ├── AddInventory.js           # Single item addition
+│   │   │   ├── EditInventory.js          # Inventory item editing
+│   │   │   ├── UploadInventory.js        # Bulk inventory upload
+│   │   │   ├── UploadJewelry.js          # Bulk jewelry upload
+│   │   │   ├── ViewInventory.js          # Main inventory display
+│   │   │   ├── ViewInventory_Old.js      # Legacy inventory view
+│   │   │   └── ViewInventory_Safe.js     # Backup inventory view
 │   │   ├── reports/             # Reporting components
-│   │   │   ├── AvailableStock.js
-│   │   │   └── VendorStock.js
+│   │   │   ├── AvailableStock.js         # Stock availability reports
+│   │   │   └── VendorStock.js            # Vendor-wise stock analysis
 │   │   ├── shared/              # Shared UI components
-│   │   │   ├── ConfirmDialog.js
-│   │   │   ├── Dashboard.js
-│   │   │   ├── Header.js
-│   │   │   ├── JewelryDetailModal.js
-│   │   │   ├── MaterialSelector.js
-│   │   │   └── Sidebar.js
+│   │   │   ├── ConfirmDialog.js          # Confirmation modals
+│   │   │   ├── Dashboard.js              # Main dashboard with analytics
+│   │   │   ├── Header.js                 # Application header with navigation
+│   │   │   ├── JewelryDetailModal.js     # Detailed jewelry item view
+│   │   │   ├── MaterialSelector.js       # Material selection component
+│   │   │   └── Sidebar.js                # Navigation sidebar with role-based access
 │   │   └── utilities/           # Utility components
-│   │       └── DollarRate.js
+│   │       ├── DataSync.js               # Data synchronization tools
+│   │       └── DollarRate.js             # Currency rate management
 │   ├── contexts/                # React contexts
-│   │   └── AuthContext.js
+│   │   └── AuthContext.js               # Authentication state management
 │   ├── hooks/                   # Custom React hooks
-│   │   ├── useJewelryCalculations.js
-│   │   ├── useLocalStorage.js
-│   │   └── useSearch.js
+│   │   ├── useApiData.js                # API data fetching hook
+│   │   ├── useDataSync.js               # Data synchronization hook
+│   │   ├── useJewelryCalculations.js    # Cost calculation utilities
+│   │   ├── useLocalStorage.js           # Local storage management
+│   │   └── useSearch.js                 # Search and filtering logic
 │   ├── services/                # API services
-│   │   └── api.js
+│   │   ├── api.js                       # Main API service with all endpoints
+│   │   ├── api.js.new                   # New API implementations
+│   │   └── api.new.js                   # Alternative API service
 │   └── utils/                   # Utility functions
-│       ├── calculations.js
-│       ├── constants.js
-│       ├── exportHelpers.js
-│       └── validation.js
+│       ├── calculations.js              # Cost and price calculations
+│       ├── constants.js                 # Application constants
+│       ├── dataManager.js               # Data management utilities
+│       ├── exportHelpers.js             # Data export functions
+│       ├── simpleStorage.js             # Simple storage utilities
+│       ├── storageSync.js               # Storage synchronization
+│       └── validation.js                # Input validation functions
 ├── server/                      # Backend Node.js application
 │   ├── server.js               # Express server entry point
+│   ├── package.json            # Backend dependencies
 │   ├── config/                 # Configuration files
-│   │   └── database.js
+│   │   └── database.js                 # Database connection configuration
 │   ├── controllers/            # Route controllers
+│   │   ├── authController.js           # Authentication logic
+│   │   ├── categoryController.js       # Category management logic
+│   │   ├── jewelryController.js        # Jewelry operations logic
+│   │   ├── materialController.js       # Material management logic
+│   │   ├── userController.js           # User management logic
+│   │   └── vendorController.js         # Vendor management logic
 │   ├── middleware/             # Custom middleware
-│   │   └── errorHandler.js
+│   │   ├── auth.js                     # 🆕 Enhanced JWT authentication middleware
+│   │   └── errorHandler.js             # Global error handling
 │   ├── models/                 # Database models
+│   │   └── index.js                    # Model exports
 │   ├── routes/                 # API routes
-│   │   ├── auth.js
-│   │   ├── categories.js
-│   │   ├── inventory.js
-│   │   ├── jewelry.js
-│   │   ├── materials.js
-│   │   ├── users.js
-│   │   └── vendor.js
+│   │   ├── auth.js                     # Authentication endpoints
+│   │   ├── categories.js               # Category CRUD endpoints
+│   │   ├── inventory.js                # Inventory management endpoints
+│   │   ├── jewelry.js                  # Jewelry CRUD endpoints
+│   │   ├── materials.js                # Material management endpoints
+│   │   ├── permissions.js              # 🆕 Custom permissions API endpoints
+│   │   ├── users.js                    # User management endpoints
+│   │   └── vendor.js                   # Vendor management endpoints
 │   ├── scripts/                # Database scripts
-│   │   ├── createDB.js
-│   │   ├── schema.sql
-│   │   └── seed.js
+│   │   ├── createAdmin.js              # Admin user creation script
+│   │   ├── createDB.js                 # Database creation script
+│   │   ├── custom_permissions.sql      # 🆕 Permissions table schema
+│   │   ├── schema.sql                  # Main database schema
+│   │   └── seed.js                     # Database seeding script
 │   └── utils/                  # Backend utilities
-├── package.json                # Frontend dependencies
+├── backend/                     # Alternative backend (legacy)
+│   ├── db.js                   # Database connection
+│   ├── server.js               # Alternative server implementation
+│   ├── middleware/
+│   │   └── auth.js             # Legacy auth middleware
+│   └── routes/
+│       ├── jewelry.js          # Legacy jewelry routes
+│       └── vendor.js           # Legacy vendor routes
+├── db.json                     # JSON database (development/backup)
+├── package.json                # Frontend dependencies and scripts
+├── jewelry-inventory-manager.code-workspace  # VS Code workspace
 ├── tailwind.config.js          # Tailwind CSS configuration
 ├── postcss.config.js           # PostCSS configuration
-└── README.md                   # Project documentation
+└── README.md                   # 🆕 Updated project documentation
 ```
+
+### 🆕 New Components & Features Added
+
+**User Permissions System:**
+- `PermissionsManagement.js` - Complete permissions matrix with editing capabilities
+- `custom_permissions.sql` - Database schema for custom permission storage
+- `permissions.js` (routes) - API endpoints for permission management
+- Enhanced `auth.js` middleware with granular permission checking
+
+**Enhanced Navigation:**
+- Updated `Sidebar.js` with role-based menu visibility
+- Dynamic permission checking for menu items
+- "User Permissions" menu item (Super Admin only)
+
+**Database Integration:**
+- PostgreSQL custom permissions table
+- Real-time permission updates
+- Audit trails for permission changes
+- Backup and restore capabilities
 
 ## 🚀 Getting Started
 
@@ -311,50 +396,79 @@ psql -U your_username -d jewelry_inventory -h localhost
 ### API Endpoints
 
 **Authentication:**
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
+- `POST /api/auth/login` - User login with role-based response
+- `POST /api/auth/logout` - User logout and token invalidation
 
 **Users:**
-- `GET /api/users` - Get all users (Admin only)
-- `POST /api/users` - Create new user (Admin only)
-- `PUT /api/users/:id` - Update user (Admin only)
-- `DELETE /api/users/:id` - Delete user (Admin only)
+- `GET /api/users` - Get all users (Admin+ only)
+- `POST /api/users` - Create new user (Admin+ only)
+- `PUT /api/users/:id` - Update user (Admin+ only)
+- `DELETE /api/users/:id` - Delete user (Admin+ only)
+
+**Permissions:** 🆕
+- `GET /api/permissions` - Get custom permissions (Authenticated users)
+- `POST /api/permissions` - Save custom permissions (Super Admin only)
+- `DELETE /api/permissions` - Reset to default permissions (Super Admin only)
 
 **Inventory:**
-- `GET /api/jewelry` - Get all jewelry items
-- `POST /api/jewelry` - Create new jewelry item
-- `PUT /api/jewelry/:id` - Update jewelry item
-- `DELETE /api/jewelry/:id` - Delete jewelry item
+- `GET /api/jewelry` - Get all jewelry items (role-based filtering)
+- `POST /api/jewelry` - Create new jewelry item (Manager+ only)
+- `PUT /api/jewelry/:id` - Update jewelry item (Manager+ only)
+- `DELETE /api/jewelry/:id` - Delete jewelry item (Admin+ only)
 
 **Materials:**
 - `GET /api/materials` - Get all materials with proper data formatting
 - `GET /api/materials/:id` - Get material by ID
 - `GET /api/materials/category/:category` - Get materials by category
-- `POST /api/materials` - Create new material with validation
-- `PUT /api/materials/:id` - Update material with data integrity
-- `DELETE /api/materials/:id` - Soft delete material
+- `POST /api/materials` - Create new material with validation (Manager+ only)
+- `PUT /api/materials/:id` - Update material with data integrity (Manager+ only)
+- `DELETE /api/materials/:id` - Soft delete material (Admin+ only)
 
 **Categories:**
 - `GET /api/categories` - Get all categories
-- `POST /api/categories` - Create new category
-- `PUT /api/categories/:id` - Update category
-- `DELETE /api/categories/:id` - Delete category
+- `POST /api/categories` - Create new category (Manager+ only)
+- `PUT /api/categories/:id` - Update category (Manager+ only)
+- `DELETE /api/categories/:id` - Delete category (Admin+ only)
 
 **Vendors:**
 - `GET /api/vendors` - Get all vendors
-- `POST /api/vendors` - Create new vendor
-- `PUT /api/vendors/:id` - Update vendor
-- `DELETE /api/vendors/:id` - Delete vendor
+- `POST /api/vendors` - Create new vendor (Manager+ only)
+- `PUT /api/vendors/:id` - Update vendor (Manager+ only)
+- `DELETE /api/vendors/:id` - Delete vendor (Admin+ only)
 
 ### Database Schema
 
 The application uses PostgreSQL with the following main tables:
-- `users` - User accounts and authentication
+- `users` - User accounts and authentication with role hierarchy
 - `categories` - Jewelry categories and subcategories
-- `materials` - Raw materials (gold, diamonds, stones, etc.)
-- `jewelry_pieces` - Individual jewelry items
+- `materials` - Raw materials (gold, diamonds, stones, etc.) with cost tracking
+- `jewelry_pieces` - Individual jewelry items with full specifications
 - `jewelry_materials` - Junction table for item-material relationships
+- `custom_permissions` - 🆕 Custom permission overrides for role-based access control
 - `sales` - Sales transactions (future implementation)
+
+### 🆕 Permission System Database Schema
+
+```sql
+-- Custom Permissions Table
+CREATE TABLE custom_permissions (
+    id SERIAL PRIMARY KEY,
+    page_id VARCHAR(100) NOT NULL,           -- System page identifier
+    role VARCHAR(50) NOT NULL,               -- User role (super_admin, admin, manager, user)
+    has_access BOOLEAN NOT NULL DEFAULT false,  -- Whether role has access
+    access_level VARCHAR(20) NOT NULL DEFAULT 'none',  -- Access level (none, view, edit, full)
+    created_by INTEGER REFERENCES users(id),    -- Who created this permission
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(page_id, role)                    -- One permission per page-role combination
+);
+```
+
+**Permission Levels:**
+- `none` - No access to the page
+- `view` - Read-only access
+- `edit` - Read and update permissions
+- `full` - Complete CRUD operations
 
 ### Code Style
 
@@ -384,16 +498,26 @@ This project uses:
 ### Completed ✅
 - **Authentication System**
   - User login with JWT authentication
-  - Role-based access control (Admin, Manager, User)
-  - Admin-only user management
-  - Secure password hashing
+  - 4-tier role-based access control (Super Admin, Admin, Manager, User)
+  - Admin-controlled user creation and management
+  - Secure password hashing and session management
+
+- **🆕 Advanced Permission Management System**
+  - **Customizable Permission Matrix**: Edit any role-page access combination
+  - **Visual Permissions Table**: Interactive tabular view with color-coded access levels
+  - **Real-time Permission Updates**: Changes saved to PostgreSQL database instantly
+  - **Quick Actions**: Bulk permission changes and default resets
+  - **Granular Access Control**: 4 access levels (None, View, Edit, Full) for each page
+  - **Super Admin Controls**: Only Super Admins can modify system permissions
+  - **Database Persistence**: Custom permissions survive server restarts and Git changes
+  - **Audit Trail**: Track who made permission changes and when
 
 - **Inventory Management**
-  - Complete jewelry item CRUD operations
+  - Complete jewelry item CRUD operations with role-based restrictions
   - Material tracking and cost calculations
   - Category and subcategory management
-  - Advanced search and filtering
-  - Bulk upload capabilities
+  - Advanced search and filtering with permission-based access
+  - Bulk upload capabilities for authorized users
 
 - **Material Management** 🆕
   - Comprehensive material library with full CRUD operations
@@ -406,23 +530,25 @@ This project uses:
   - Optimized API with camelCase/snake_case compatibility
 
 - **Vendor Management**
-  - Vendor contact information
+  - Vendor contact information with role-based access
   - Vendor performance tracking
-  - Purchase history management
+  - Purchase history management with permission controls
 
 - **Database Integration**
   - PostgreSQL database setup with proper schema
   - Complete database relationships and constraints
+  - Custom permissions table for granular access control
   - Database seeding scripts and migration capabilities
   - Connection pooling and error handling
   - Data type validation and conversion
 
 - **UI/UX**
   - Modern, responsive design with Tailwind CSS
-  - Intuitive navigation and user interface
+  - Intuitive navigation with role-based menu visibility
   - Real-time dashboard with analytics
   - Mobile-responsive layout
   - Error handling with user-friendly messages
+  - **Interactive Permission Matrix**: Editable table with dropdown selectors
 
 ### In Progress �
 - **Enhanced Reporting**
@@ -617,11 +743,47 @@ We welcome contributions from the community! Please see our [Contributing Guidel
 
 **Project Status**: 🟢 **Active Development**
 
-**Current Version**: v1.0.0-beta
+**Current Version**: v1.2.0-beta
 
 **Last Updated**: August 18, 2025
 
-### 🆕 Recent Updates (v1.0.0-beta)
+### 🆕 Recent Updates (v1.2.0-beta)
+- **🔐 Complete Permission Management System**
+  - Interactive permission matrix with real-time editing
+  - 4-tier role hierarchy with customizable access levels
+  - Database-persisted custom permissions with audit trails
+  - Visual permission table showing 14 system pages vs 4 user roles
+  - Quick actions for bulk permission changes
+  - Super Admin controls for system-wide permission management
+
+- **🛡️ Enhanced Security & Access Control**
+  - Granular permission checking at component and API levels
+  - Role-based UI rendering with dynamic menu visibility
+  - Secure permission API endpoints with proper authentication
+  - Custom permission overrides with database persistence
+
+- **📊 System Pages Coverage**
+  - **Core Pages**: Dashboard with role-specific widgets
+  - **Admin Tools**: User Management, User Permissions, Material/Category/Vendor Management
+  - **Inventory**: View/Add/Edit Inventory with permission-based access
+  - **Billing**: Indian/US billing formats with role restrictions
+  - **Reports**: Available Stock, Vendor Stock with access controls
+  - **Utilities**: Dollar Rate, Data Sync with admin-only access
+
+- **🎨 UI/UX Improvements**
+  - "User Permissions" renamed and integrated throughout interface
+  - Color-coded permission levels (Green=Full, Blue=Edit, Gray=View, Red=None)
+  - Interactive dropdowns for permission editing
+  - Real-time statistics showing accessible pages per role
+  - Enhanced visual feedback and loading states
+
+- **🗄️ Database Enhancements**
+  - New `custom_permissions` table with proper indexing
+  - Permission change audit trails with user tracking
+  - Optimized queries for role-based data filtering
+  - Database migration scripts for permission system
+
+### Previous Updates (v1.0.0-beta)
 - **Materials Management Complete Implementation**
   - Fixed API endpoints with full CRUD operations
   - Resolved cost price and sale price data persistence issues

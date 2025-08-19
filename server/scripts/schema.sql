@@ -4,15 +4,49 @@ DROP TABLE IF EXISTS jewelry_materials CASCADE;
 DROP TABLE IF EXISTS jewelry_pieces CASCADE;
 DROP TABLE IF EXISTS materials CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
+DROP TABLE IF EXISTS vendors CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Users table
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('admin', 'super_admin', 'manager', 'user')),
+  is_password_reset_required BOOLEAN DEFAULT true,
+  password_reset_token VARCHAR(255),
+  password_reset_expires TIMESTAMP,
+  last_login TIMESTAMP,
+  login_attempts INTEGER DEFAULT 0,
+  account_locked_until TIMESTAMP,
+  is_active BOOLEAN DEFAULT true,
+  created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Vendors table
+CREATE TABLE vendors (
+  id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  role VARCHAR(50) DEFAULT 'user',
+  company VARCHAR(255),
+  email VARCHAR(255),
+  phone VARCHAR(20),
+  address TEXT,
+  city VARCHAR(100),
+  state VARCHAR(100),
+  country VARCHAR(100) DEFAULT 'India',
+  postal_code VARCHAR(20),
+  contact_person VARCHAR(255),
+  website VARCHAR(255),
+  gst_number VARCHAR(50),
+  payment_terms VARCHAR(100),
+  credit_limit DECIMAL(12, 2) DEFAULT 0,
+  notes TEXT,
+  rating INTEGER DEFAULT 0 CHECK (rating >= 0 AND rating <= 5),
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -55,7 +89,7 @@ CREATE TABLE jewelry_pieces (
   total_cost DECIMAL(10, 2) DEFAULT 0,
   sale_price DECIMAL(10, 2) NOT NULL,
   status VARCHAR(50) DEFAULT 'In Stock',
-  vendor VARCHAR(255),
+  vendor_id INTEGER REFERENCES vendors(id),
   notes TEXT,
   image_url VARCHAR(500),
   gold_weight DECIMAL(10, 3) DEFAULT 0,
@@ -99,9 +133,15 @@ CREATE TABLE sales (
 CREATE INDEX idx_jewelry_status ON jewelry_pieces(status);
 CREATE INDEX idx_jewelry_category ON jewelry_pieces(category_id);
 CREATE INDEX idx_jewelry_code ON jewelry_pieces(code);
+CREATE INDEX idx_jewelry_vendor ON jewelry_pieces(vendor_id);
 CREATE INDEX idx_materials_code ON materials(code);
 CREATE INDEX idx_sales_date ON sales(sale_date);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_active ON users(is_active);
+CREATE INDEX idx_vendors_name ON vendors(name);
+CREATE INDEX idx_vendors_email ON vendors(email);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -114,6 +154,9 @@ $$ language 'plpgsql';
 
 -- Create triggers for updated_at
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_vendors_updated_at BEFORE UPDATE ON vendors
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories

@@ -1,103 +1,158 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+
+// Auth Components
+import Login from './components/auth/Login';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Admin Components  
 import MaterialManagement from './components/admin/MaterialManagement';
 import CategoryManagement from './components/admin/CategoryManagement';
+import VendorManagement from './components/admin/VendorManagement';
+import UserManagement from './components/admin/UserManagement';
+import PermissionsManagement from './components/admin/PermissionsManagement';
 
 // Inventory Components
 import ViewInventory from './components/inventory/ViewInventory';
-// import UploadJewelry from './components/inventory/UploadJewelry'; // Future Enhancement
+import AddInventory from './components/inventory/AddInventory';
+import EditInventory from './components/inventory/EditInventory';
+
+// Billing Components
+import IndianBilling from './components/billing/IndianBilling';
+import USBilling from './components/billing/USBilling';
+
+// Reports Components
+import AvailableStock from './components/reports/AvailableStock';
+import VendorStock from './components/reports/VendorStock';
+
+// Utilities Components
+import DataSync from './components/utilities/DataSync';
+import DollarRate from './components/utilities/DollarRate';
 
 // Shared Components
 import Sidebar from './components/shared/Sidebar';
+import { Dashboard } from './components/shared/Dashboard';
 
 // Icons
-import { Menu } from 'lucide-react';
+import { Menu, LogOut, User } from 'lucide-react';
 
-function App() {
+function AppContent() {
+  const { user, isAuthenticated, loading, logout } = useAuth();
   const [currentModule, setCurrentModule] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [materials, setMaterials] = useState([]);
-  const [jewelryPieces, setJewelryPieces] = useState([]);
-  const [jewelryCategories, setJewelryCategories] = useState([]);
-
-  // Data initialization
-  useEffect(() => {
-    const savedMaterials = localStorage.getItem('jewelryMaterials');
-    const savedJewelry = localStorage.getItem('jewelryPieces');
-    const savedCategories = localStorage.getItem('jewelryCategories');
-    
-    if (savedMaterials) {
-      setMaterials(JSON.parse(savedMaterials));
-    } else {
-      const defaultMaterials = [
-        { id: 1, category: 'Diamond', name: 'Flat Diamonds', code: 'FD', costPrice: 150, salePrice: 400, unit: 'each' },
-        { id: 2, category: 'Diamond', name: 'Round Diamonds', code: 'RD', costPrice: 200, salePrice: 500, unit: 'each' }
-      ];
-      setMaterials(defaultMaterials);
-      localStorage.setItem('jewelryMaterials', JSON.stringify(defaultMaterials));
-    }
-
-    if (savedCategories) {
-      setJewelryCategories(JSON.parse(savedCategories));
-    } else {
-      const defaultCategories = [
-        { id: 1, name: 'Necklace', code: 'N', description: 'All types of necklaces' },
-        { id: 2, name: 'Ring', code: 'R', description: 'All types of rings' }
-      ];
-      setJewelryCategories(defaultCategories);
-      localStorage.setItem('jewelryCategories', JSON.stringify(defaultCategories));
-    }
-
-    if (savedJewelry) {
-      setJewelryPieces(JSON.parse(savedJewelry));
-    } else {
-      const sampleJewelry = [
-        {
-          id: 1,
-          name: 'Test Necklace',
-          code: 'N-001',
-          category: 'Necklace',
-          salePrice: 1000,
-          status: 'In Stock',
-          createdDate: new Date().toISOString()
-        }
-      ];
-      setJewelryPieces(sampleJewelry);
-      localStorage.setItem('jewelryPieces', JSON.stringify(sampleJewelry));
-    }
-  }, []);
 
   const handleMenuClick = (moduleId) => {
     setCurrentModule(moduleId);
   };
 
-  // Simple test component
-  const TestDashboard = () => (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4 text-blue-600">Dashboard</h1>
-      <div className="bg-blue-100 p-4 rounded-lg shadow">
-        <p className="text-lg">Materials: {materials.length}</p>
-        <p className="text-lg">Categories: {jewelryCategories.length}</p>
-        <p className="text-lg">Jewelry: {jewelryPieces.length}</p>
+  // Show loading screen while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading application...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Show login if not authenticated
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  // Role-based access control
+  const hasAccess = (feature) => {
+    if (!user) return false;
+    
+    const { role } = user;
+    
+    switch (feature) {
+      case 'user-management':
+      case 'permissions-management':
+        return role === 'super_admin';
+      case 'material-management':
+      case 'category-management':
+      case 'vendor-management':
+        return ['super_admin', 'admin', 'manager'].includes(role);
+      case 'add-inventory':
+      case 'edit-inventory':
+        return ['super_admin', 'admin', 'manager'].includes(role);
+      case 'view-inventory':
+      case 'available-stock':
+      case 'vendor-stock':
+        return true; // All roles can view
+      case 'indian-billing':
+      case 'us-billing':
+        return ['super_admin', 'admin', 'manager'].includes(role);
+      case 'dollar-rate':
+      case 'data-sync':
+        return ['super_admin', 'admin', 'manager'].includes(role);
+      default:
+        return true;
+    }
+  };
 
   const renderContent = () => {
+    // Check if user has access to the current module
+    if (!hasAccess(currentModule)) {
+      return (
+        <div className="p-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <div className="text-red-600 mb-4">
+              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-red-800 mb-2">Access Denied</h3>
+            <p className="text-red-600">You don't have permission to access this feature.</p>
+            <p className="text-sm text-red-500 mt-2">Current role: <span className="font-semibold">{user?.role?.replace('_', ' ').toUpperCase()}</span></p>
+          </div>
+        </div>
+      );
+    }
+
     switch (currentModule) {
       case 'dashboard':
-        return <TestDashboard />;
+        return <Dashboard />;
       case 'material-management':
-        return <MaterialManagement materials={materials} setMaterials={setMaterials} />;
+        return <MaterialManagement />;
       case 'category-management':
-        return <CategoryManagement jewelryCategories={jewelryCategories} setJewelryCategories={setJewelryCategories} />;
+        return <CategoryManagement />;
+      case 'vendor-management':
+        return <VendorManagement />;
+      case 'user-management':
+        return <UserManagement />;
+      case 'permissions-management':
+        return <PermissionsManagement />;
       case 'view-inventory':
         return <ViewInventory />;
+      case 'add-inventory':
+        return <AddInventory />;
+      case 'edit-inventory':
+        return <EditInventory />;
+      case 'indian-billing':
+        return <IndianBilling />;
+      case 'us-billing':
+        return <USBilling />;
+      case 'available-stock':
+        return <AvailableStock />;
+      case 'vendor-stock':
+        return <VendorStock />;
+      case 'dollar-rate':
+        return <DollarRate />;
+      case 'data-sync':
+        return <DataSync />;
       // case 'upload-jewelry':
       //   return <UploadJewelry />; // Future Enhancement
       default:
-        return <TestDashboard />;
+        return <Dashboard />;
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to log out?')) {
+      logout();
     }
   };
 
@@ -114,14 +169,36 @@ function App() {
       {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
         {/* Header */}
-        <div className="bg-white shadow-sm p-4 flex items-center">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-md hover:bg-gray-100 mr-4"
-          >
-            <Menu size={20} />
-          </button>
-          <h1 className="text-xl font-bold text-gray-800">Jewelry Inventory Manager</h1>
+        <div className="bg-white shadow-sm p-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-md hover:bg-gray-100 mr-4"
+            >
+              <Menu size={20} />
+            </button>
+            <h1 className="text-xl font-bold text-gray-800">Jewelry Inventory Manager</h1>
+          </div>
+          
+          {/* User Info and Logout */}
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <User className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {user?.fullName || user?.username || 'User'}
+              </span>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {user?.role || 'user'}
+              </span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
         
         {/* Main Content Area */}
@@ -130,6 +207,15 @@ function App() {
         </main>
       </div>
     </div>
+  );
+}
+
+// Main App with Auth Provider
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

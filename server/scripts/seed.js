@@ -12,10 +12,10 @@ async function seedDatabase() {
     const passwordHash = await bcrypt.hash('admin123', salt);
     
     await client.query(
-      `INSERT INTO users (email, password_hash, name, role) 
-       VALUES ($1, $2, $3, $4) 
-       ON CONFLICT (email) DO NOTHING`,
-      ['admin@jewelry.com', passwordHash, 'Admin User', 'admin']
+      `INSERT INTO users (email, password_hash, first_name, last_name, username, role) 
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (username) DO NOTHING`,
+      ['admin@jewelry.com', passwordHash, 'Admin', 'User', 'admin', 'super_admin']
     );
     
     // Seed categories
@@ -31,7 +31,7 @@ async function seedDatabase() {
     for (const category of categories) {
       await client.query(
         `INSERT INTO categories (name, code, description) 
-         VALUES ($1, $2, $3) 
+         VALUES ($1, $2, $3)
          ON CONFLICT (code) DO NOTHING`,
         [category.name, category.code, category.description]
       );
@@ -53,7 +53,7 @@ async function seedDatabase() {
     for (const material of materials) {
       await client.query(
         `INSERT INTO materials (category, name, code, cost_price, sale_price, unit) 
-         VALUES ($1, $2, $3, $4, $5, $6) 
+         VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (code) DO NOTHING`,
         [material.category, material.name, material.code, 
          material.cost_price, material.sale_price, material.unit]

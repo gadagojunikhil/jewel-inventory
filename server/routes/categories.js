@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { body, validationResult } = require('express-validator');
 const pool = require('../config/database');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth, managerAuth } = require('../middleware/auth');
 
 // Get all categories
 router.get('/', async (req, res) => {

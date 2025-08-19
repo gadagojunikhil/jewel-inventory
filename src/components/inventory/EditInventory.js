@@ -188,3 +188,5 @@ const EditInventory = ({ jewelryPieces, setJewelryPieces, materials, jewelryCate
     </div>
   );
 };
+
+export default EditInventory;

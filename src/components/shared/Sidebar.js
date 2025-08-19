@@ -1,11 +1,45 @@
 import React, { useState } from 'react';
 import { 
   Home, Settings, Package, FileText, BarChart3, Calculator,
-  Users, Gem, Plus, Edit2, DollarSign, Eye, ChevronDown
+  Users, Gem, Plus, Edit2, DollarSign, Eye, ChevronDown, Building2, Shield
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }) => {
+  const { user } = useAuth();
   const [activeDropdown, setActiveDropdown] = useState(null);
+
+  // Role-based access control
+  const hasAccess = (feature) => {
+    if (!user) return false;
+    
+    const { role } = user;
+    
+    switch (feature) {
+      case 'user-management':
+      case 'permissions-management':
+        return role === 'super_admin'; // Only super admin can manage users and permissions
+      case 'material-management':
+      case 'category-management':
+      case 'vendor-management':
+        return ['super_admin', 'admin', 'manager'].includes(role);
+      case 'add-inventory':
+      case 'edit-inventory':
+        return ['super_admin', 'admin', 'manager'].includes(role);
+      case 'view-inventory':
+      case 'available-stock':
+      case 'vendor-stock':
+        return true; // All roles can view
+      case 'indian-billing':
+      case 'us-billing':
+        return ['super_admin', 'admin', 'manager'].includes(role);
+      case 'dollar-rate':
+      case 'data-sync':
+        return ['super_admin', 'admin', 'manager'].includes(role);
+      default:
+        return true;
+    }
+  };
 
   const menuItems = [
     {
@@ -13,9 +47,11 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
       title: 'Admin',
       submenu: [
         { id: 'user-management', title: 'User Management', icon: Users },
+        { id: 'permissions-management', title: 'User Permissions', icon: Shield },
         { id: 'material-management', title: 'Material Management', icon: Gem },
-        { id: 'category-management', title: 'Category Management', icon: Package }
-      ]
+        { id: 'category-management', title: 'Category Management', icon: Package },
+        { id: 'vendor-management', title: 'Vendor Details', icon: Building2 }
+      ].filter(item => hasAccess(item.id))
     },
     {
       id: 'inventory',
@@ -25,7 +61,7 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
         { id: 'add-inventory', title: 'Add Inventory', icon: Plus },
         { id: 'edit-inventory', title: 'Edit Inventory', icon: Edit2 }
         // { id: 'upload-jewelry', title: 'Upload Jewelry', icon: Upload } // Future Enhancement
-      ]
+      ].filter(item => hasAccess(item.id))
     },
     {
       id: 'billing',
@@ -33,7 +69,7 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
       submenu: [
         { id: 'indian-billing', title: 'Indian Billing', icon: DollarSign },
         { id: 'us-billing', title: 'US Billing', icon: DollarSign }
-      ]
+      ].filter(item => hasAccess(item.id))
     },
     {
       id: 'report',
@@ -41,16 +77,17 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
       submenu: [
         { id: 'available-stock', title: 'Available Stock', icon: Package },
         { id: 'vendor-stock', title: 'Vendor Stock', icon: Users }
-      ]
+      ].filter(item => hasAccess(item.id))
     },
     {
       id: 'utilities',
       title: 'Utilities',
       submenu: [
-        { id: 'dollar-rate', title: 'Get Dollar Rate', icon: DollarSign }
-      ]
+        { id: 'dollar-rate', title: 'Get Dollar Rate', icon: DollarSign },
+        { id: 'data-sync', title: 'Data Sync', icon: Settings }
+      ].filter(item => hasAccess(item.id))
     }
-  ];
+  ].filter(section => section.submenu.length > 0); // Remove empty sections
 
   const toggleDropdown = (dropdownId) => {
     setActiveDropdown(activeDropdown === dropdownId ? null : dropdownId);
