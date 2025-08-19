@@ -24,8 +24,8 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
       submenu: [
         { id: 'user-management', title: 'User Management', icon: Users },
         { id: 'permissions-management', title: 'User Permissions', icon: Shield },
-        { id: 'material-management', title: 'Material Management', icon: Gem },
-        { id: 'category-management', title: 'Category Management', icon: Package },
+        { id: 'material-management', title: 'Gemstone & Materials', icon: Gem },
+        { id: 'category-management', title: 'Product Categories', icon: Package },
         { id: 'vendor-management', title: 'Vendor Details', icon: Building2 }
       ].filter(item => hasAccess(item.id))
     },

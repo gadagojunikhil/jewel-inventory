@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Building2, Search, Phone, Mail, Star, Shield } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Search, Phone, Mail, Shield } from 'lucide-react';
 import usePermissions from '../../hooks/usePermissions';
 
 const VendorManagement = () => {
-  const { hasPermission, canAccessPage, getPermissionLevel } = usePermissions();
+  const { hasPermission, getPermissionLevel } = usePermissions();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,14 +16,16 @@ const VendorManagement = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [newVendor, setNewVendor] = useState({
-    company: '',
+    name: '',
     email: '',
     phone: '',
     address: '',
     city: '',
     state: '',
-    country: '',
+    country: 'India',
     postal_code: '',
     contact_person: '',
     website: '',
@@ -83,60 +85,67 @@ const VendorManagement = () => {
 
   // CRUD Operations
   const handleAddVendor = async () => {
-    if (!newVendor.company) {
-      alert('Please fill in the required field (Company)');
+    if (!newVendor.name.trim()) {
+      setError('Vendor name is required');
       return;
     }
 
-    try {
-      let token = localStorage.getItem('token');
-      if (!token) {
-        token = 'dummy-token';
-        localStorage.setItem('token', token);
-      }
+    setIsSubmitting(true);
+    setError('');
 
+    try {
+      // Send name to both name and company fields since they represent the same thing
+      const vendorData = {
+        ...newVendor,
+        company: newVendor.name // Use name as company name too
+      };
+      
       const response = await fetch('/api/vendors', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(newVendor)
+        body: JSON.stringify(vendorData)
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to add vendor');
+      if (response.ok) {
+        const vendor = await response.json();
+        setVendors([...vendors, vendor]);
+        setNewVendor({
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+          city: '',
+          state: '',
+          country: 'India',
+          postalCode: '',
+          contactPerson: '',
+          website: '',
+          gstNumber: '',
+          paymentTerms: '',
+          creditLimit: 0,
+          notes: '',
+          rating: 0
+        });
+        setShowAddForm(false);
+        alert('Vendor added successfully!');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to add vendor');
       }
-
-      const addedVendor = await response.json();
-      setVendors(prev => [...prev, addedVendor]);
-      setNewVendor({
-        company: '',
-        email: '',
-        phone: '',
-        address: '',
-        city: '',
-        state: '',
-        country: '',
-        postal_code: '',
-        contact_person: '',
-        website: '',
-        gst_number: '',
-        payment_terms: 'Net 30',
-        notes: '',
-        creditLimit: 0
-      });
-      setShowAddForm(false);
-      alert('Vendor added successfully!');
-    } catch (err) {
-      console.error('Add vendor error:', err);
-      alert('Failed to add vendor. Please try again.');
+    } catch (error) {
+      console.error('Error adding vendor:', error);
+      setError('Failed to add vendor. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEditVendor = async () => {
-    if (!editingVendor.company) {
-      alert('Please fill in the required field (Company)');
+    if (!editingVendor.name) {
+      alert('Please fill in the required field (Vendor Name)');
       return;
     }
 
@@ -146,6 +155,12 @@ const VendorManagement = () => {
         token = 'dummy-token';
         localStorage.setItem('token', token);
       }
+
+      // Send name to both name and company fields since they represent the same thing
+      const vendorData = {
+        ...editingVendor,
+        company: editingVendor.name // Use name as company name too
+      };
 
       const response = await fetch(`/api/vendors/${editingVendor.id}`, {
         method: 'PUT',
@@ -153,7 +168,7 @@ const VendorManagement = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(editingVendor)
+        body: JSON.stringify(vendorData)
       });
 
       if (!response.ok) {
@@ -381,12 +396,13 @@ const VendorManagement = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vendor/Company Name *</label>
                 <input
                   type="text"
-                  value={newVendor.company}
-                  onChange={(e) => setNewVendor({...newVendor, company: e.target.value})}
+                  value={newVendor.name}
+                  onChange={(e) => setNewVendor({...newVendor, name: e.target.value})}
                   className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Raj Jewelers, Gold Palace Pvt Ltd"
                   required
                 />
               </div>
@@ -562,14 +578,15 @@ const VendorManagement = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vendor/Company Name *</label>
                 <input
                   type="text"
-                  value={editingVendor.company}
-                  onChange={(e) => setEditingVendor({...editingVendor, company: e.target.value})}
+                  value={editingVendor.name}
+                  onChange={(e) => setEditingVendor({...editingVendor, name: e.target.value})}
                   className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Raj Jewelers, Gold Palace Pvt Ltd"
                   required
                 />
               </div>

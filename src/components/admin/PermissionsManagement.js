@@ -103,14 +103,14 @@ const PermissionsManagement = () => {
     },
     {
       id: 'material-management',
-      name: 'Material Management',
+      name: 'Gemstone & Materials',
       description: 'Manage jewelry materials, prices, and inventory',
       category: 'Admin',
       icon: '💎'
     },
     {
       id: 'category-management',
-      name: 'Category Management',
+      name: 'Product Categories',
       description: 'Manage jewelry categories and classifications',
       category: 'Admin',
       icon: '📂'
@@ -333,7 +333,7 @@ const PermissionsManagement = () => {
       const mergedPermissions = mergePermissions(permissions, customPermissions);
       setEditablePermissions(mergedPermissions);
     }
-  }, [permissions, customPermissions]);
+  }, [permissions, customPermissions, editablePermissions]);
 
   // Load custom permissions from backend
   const loadCustomPermissions = async () => {
@@ -398,6 +398,9 @@ const PermissionsManagement = () => {
                   delete: false,
                   approve: false
                 };
+                break;
+              default:
+                // Keep the default newPermission (all false)
                 break;
             }
           }
@@ -470,14 +473,6 @@ const PermissionsManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Reset changes
-  const resetChanges = () => {
-    const mergedPermissions = mergePermissions(permissions, customPermissions);
-    setEditablePermissions(mergedPermissions);
-    setHasChanges(false);
-    setIsEditing(false);
   };
 
   // Reset to default permissions

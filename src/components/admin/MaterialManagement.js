@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Gem, Search } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
 import usePermissions from '../../hooks/usePermissions';
 
 const MaterialManagement = () => {
-  const { user } = useAuth();
   const { hasPermission, getPermissionLevel } = usePermissions();
   
   // Permission checks for material-management page
   const canCreate = hasPermission('material-management', 'create');
   const canEdit = hasPermission('material-management', 'edit');
   const canDelete = hasPermission('material-management', 'delete');
-  const canView = hasPermission('material-management', 'view');
   const permissionLevel = getPermissionLevel('material-management');
   
   const [materials, setMaterials] = useState([]);
@@ -326,7 +323,7 @@ const MaterialManagement = () => {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Material Management</h2>
+        <h2 className="text-2xl font-bold">Gemstone & Materials</h2>
         <button
           onClick={() => setShowAddMaterialForm(true)}
           disabled={!canCreate}
@@ -739,7 +736,7 @@ const MaterialManagement = () => {
 
       {/* Help Section */}
       <div className="mt-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-        <h4 className="font-semibold text-yellow-800 mb-2">Material Management Guide:</h4>
+        <h4 className="font-semibold text-yellow-800 mb-2">Gemstone & Materials Guide:</h4>
         <div className="text-sm text-yellow-700 space-y-1">
           <p>• <strong>Search:</strong> Use the search bar to find materials by name, code, or category</p>
           <p>• <strong>Markup:</strong> Automatically calculated as (Sale Price - Cost Price) / Cost Price × 100</p>
