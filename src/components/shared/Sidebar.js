@@ -24,8 +24,8 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
       submenu: [
         { id: 'user-management', title: 'User Management', icon: Users },
         { id: 'permissions-management', title: 'User Permissions', icon: Shield },
-        { id: 'material-management', title: 'Material Management', icon: Gem },
-        { id: 'category-management', title: 'Category Management', icon: Package },
+        { id: 'material-management', title: 'Gemstone & Materials', icon: Gem },
+        { id: 'category-management', title: 'Product Categories', icon: Package },
         { id: 'vendor-management', title: 'Vendor Details', icon: Building2 }
       ].filter(item => hasAccess(item.id))
     },
@@ -59,7 +59,8 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
       id: 'utilities',
       title: 'Utilities',
       submenu: [
-        { id: 'dollar-rate', title: 'Get Dollar Rate', icon: DollarSign },
+        { id: 'gold-rate', title: 'Gold Rate', icon: Gem },
+        { id: 'dollar-rate', title: 'Dollar Rate', icon: DollarSign },
         { id: 'data-sync', title: 'Data Sync', icon: Settings }
       ].filter(item => hasAccess(item.id))
     }

@@ -28,6 +28,7 @@ import VendorStock from './components/reports/VendorStock';
 // Utilities Components
 import DataSync from './components/utilities/DataSync';
 import DollarRate from './components/utilities/DollarRate';
+import GoldRate from './components/utilities/GoldRate';
 
 // Shared Components
 import Sidebar from './components/shared/Sidebar';
@@ -115,6 +116,8 @@ function AppContent() {
         return <AvailableStock />;
       case 'vendor-stock':
         return <VendorStock />;
+      case 'gold-rate':
+        return <GoldRate />;
       case 'dollar-rate':
         return <DollarRate />;
       case 'data-sync':

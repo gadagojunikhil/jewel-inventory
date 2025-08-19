@@ -24,6 +24,7 @@ const permissionsRoutes = require('./routes/permissions');
 const errorHandler = require('./middleware/errorHandler');
 const inventoryRoutes = require('./routes/inventory');
 const usersRoutes = require('./routes/users');
+const ratesRoutes = require('./routes/rates');
 console.log('Routes loaded successfully');
 
 const app = express();
@@ -32,6 +33,12 @@ const app = express();
 console.log('Initializing database connection...');
 require('./config/database');
 console.log('Database initialized');
+
+// Initialize rate scheduler
+console.log('Initializing rate scheduler...');
+const { initializeScheduler } = require('./utils/rateScheduler');
+initializeScheduler();
+console.log('Rate scheduler initialized');
 
 // Middleware
 app.use(helmet());
@@ -56,7 +63,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/users', usersRoutes);
-app.use('/api/permissions', permissionsRoutes); 
+app.use('/api/permissions', permissionsRoutes);
+app.use('/api/rates', ratesRoutes); 
 
 // Health check
 app.get('/api/health', (req, res) => {
