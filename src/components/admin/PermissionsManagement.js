@@ -21,14 +21,62 @@ const PermissionsManagement = () => {
     { id: 'guest', name: 'Guest', color: 'bg-gray-100 text-gray-800', icon: '👥' }
   ];
 
-  // Permission types with their details
+  // Permission types with their details - reordered for better UX
   const permissionTypes = [
     { id: 'create', name: 'Create', icon: '➕', color: 'text-green-600' },
-    { id: 'view', name: 'View', icon: '👁️', color: 'text-blue-600' },
     { id: 'edit', name: 'Edit', icon: '✏️', color: 'text-yellow-600' },
     { id: 'delete', name: 'Delete', icon: '🗑️', color: 'text-red-600' },
+    { id: 'view', name: 'View', icon: '�️', color: 'text-blue-600' },
     { id: 'approve', name: 'Approve', icon: '✅', color: 'text-purple-600' }
   ];
+
+  // Define which permissions are applicable for each page category
+  const getApplicablePermissions = (pageId, category) => {
+    switch (category) {
+      case 'Reports':
+        return ['view']; // Reports only have view access
+      case 'Utilities':
+        return ['view', 'edit']; // Utilities can be viewed and configured
+      case 'Core':
+        return ['view']; // Dashboard only needs view
+      case 'Admin':
+      case 'Inventory':
+      case 'Billing':
+        return ['create', 'edit', 'delete', 'view', 'approve']; // Full permissions for management pages
+      default:
+        return ['view']; // Default to view only
+    }
+  };
+
+  // Get category information for UI hints
+  const getCategoryPermissionInfo = (category) => {
+    switch (category) {
+      case 'Reports':
+        return { 
+          description: 'Read-only reports and analytics', 
+          disabled: ['create', 'edit', 'delete', 'approve'],
+          color: 'text-blue-600'
+        };
+      case 'Utilities':
+        return { 
+          description: 'System utilities and configurations', 
+          disabled: ['create', 'delete', 'approve'],
+          color: 'text-indigo-600'
+        };
+      case 'Core':
+        return { 
+          description: 'Core system interface', 
+          disabled: ['create', 'edit', 'delete', 'approve'],
+          color: 'text-gray-600'
+        };
+      default:
+        return { 
+          description: 'Full management capabilities', 
+          disabled: [],
+          color: 'text-green-600'
+        };
+    }
+  };
 
   // All pages/features in the system with their details
   const systemPages = [
@@ -47,6 +95,13 @@ const PermissionsManagement = () => {
       icon: '👥'
     },
     {
+      id: 'permissions-management',
+      name: 'User Permissions',
+      description: 'Manage user role permissions and access control',
+      category: 'Admin',
+      icon: '🛡️'
+    },
+    {
       id: 'material-management',
       name: 'Material Management',
       description: 'Manage jewelry materials, prices, and inventory',
@@ -62,7 +117,7 @@ const PermissionsManagement = () => {
     },
     {
       id: 'vendor-management',
-      name: 'Vendor Management',
+      name: 'Vendor Details',
       description: 'Manage vendor information and contacts',
       category: 'Admin',
       icon: '🏢'
@@ -104,21 +159,21 @@ const PermissionsManagement = () => {
     },
     {
       id: 'available-stock',
-      name: 'Available Stock Report',
+      name: 'Available Stock',
       description: 'View current stock levels and availability',
       category: 'Reports',
       icon: '📈'
     },
     {
       id: 'vendor-stock',
-      name: 'Vendor Stock Report',
+      name: 'Vendor Stock',
       description: 'View stock by vendor breakdown',
       category: 'Reports',
       icon: '📊'
     },
     {
       id: 'dollar-rate',
-      name: 'Dollar Rate Utility',
+      name: 'Get Dollar Rate',
       description: 'Get current exchange rates',
       category: 'Utilities',
       icon: '💱'
@@ -244,6 +299,20 @@ const PermissionsManagement = () => {
     };
     setEditablePermissions(updatedPermissions);
     setHasChanges(true);
+  };
+
+  // Start editing mode and scroll to top
+  const startEditing = () => {
+    setIsEditing(true);
+    // Scroll to top of the page smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Cancel editing mode
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setHasChanges(false);
+    setEditablePermissions({});
   };
 
   const groupedPages = systemPages.reduce((acc, page) => {
@@ -498,7 +567,9 @@ const PermissionsManagement = () => {
 
       {/* Enhanced Permissions Matrix for Selected Role */}
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+        <div className={`bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 ${
+          isEditing ? 'sticky top-0 z-10 shadow-lg' : ''
+        }`}>
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center">
@@ -513,7 +584,7 @@ const PermissionsManagement = () => {
             <div className="flex space-x-2">
               {!isEditing ? (
                 <button
-                  onClick={() => setIsEditing(true)}
+                  onClick={startEditing}
                   className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors flex items-center"
                 >
                   <Settings className="w-4 h-4 mr-1" />
@@ -534,7 +605,7 @@ const PermissionsManagement = () => {
                     {loading ? 'Saving...' : 'Save Changes'}
                   </button>
                   <button
-                    onClick={resetChanges}
+                    onClick={cancelEditing}
                     className="bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center"
                   >
                     <X className="w-4 h-4 mr-1" />
@@ -546,92 +617,145 @@ const PermissionsManagement = () => {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  <div className="flex items-center">
-                    <span className="mr-2">📄</span>
-                    Page / Feature
-                  </div>
-                </th>
-                {permissionTypes.map(permission => (
-                  <th key={permission.id} className="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    <div className="flex flex-col items-center">
-                      <span className={`mb-1 text-lg ${permission.color}`}>{permission.icon}</span>
-                      <span className="text-xs">{permission.name}</span>
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className={`overflow-x-auto ${isEditing ? 'max-h-96 overflow-y-auto' : ''}`}>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className={`bg-gray-50 ${isEditing ? 'sticky top-0 z-10 shadow-sm' : ''}`}>
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200 sticky left-0 bg-gray-50 z-20">
+                    <div className="flex items-center">
+                      <span className="mr-2">📄</span>
+                      Page / Feature
                     </div>
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {Object.entries(groupedPages).map(([category, pages]) => (
-                <React.Fragment key={category}>
-                  {/* Category Header Row */}
-                  <tr className="bg-gray-100">
-                    <td colSpan={permissionTypes.length + 1} className="px-6 py-3 text-sm font-bold text-gray-800 bg-gradient-to-r from-gray-200 to-gray-100">
-                      <div className="flex items-center">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                        {category.toUpperCase()}
+                  {permissionTypes.map((permission, index) => (
+                    <th 
+                      key={permission.id} 
+                      className={`px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider ${
+                        permission.id === 'approve' ? 'border-l-4 border-purple-300' : ''
+                      }`}
+                    >
+                      <div className="flex flex-col items-center">
+                        <span className={`mb-1 text-lg ${permission.color}`}>{permission.icon}</span>
+                        <span className="text-xs">{permission.name}</span>
+                        {permission.id === 'approve' && (
+                          <span className="text-xs text-purple-500 mt-1 font-normal">Workflow</span>
+                        )}
                       </div>
-                    </td>
-                  </tr>
-                  {/* Category Pages */}
-                  {pages.map((page, index) => {
-                    const currentPermissions = getCurrentPermissions();
-                    const pagePermissions = currentPermissions[page.id] && currentPermissions[page.id][selectedRole] 
-                      ? currentPermissions[page.id][selectedRole] 
-                      : getPageAccess(page.id, selectedRole);
-                    
-                    return (
-                      <tr key={page.id} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                        <td className="px-6 py-4 border-r border-gray-200">
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {Object.entries(groupedPages).map(([category, pages]) => (
+                  <React.Fragment key={category}>
+                    {/* Category Header Row */}
+                    <tr className="bg-gray-100">
+                      <td colSpan={permissionTypes.length + 1} className="px-6 py-3 text-sm font-bold text-gray-800 bg-gradient-to-r from-gray-200 to-gray-100">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center">
-                            <span className="text-xl mr-3">{page.icon}</span>
-                            <div>
-                              <div className="text-sm font-semibold text-gray-900">{page.name}</div>
-                              <div className="text-xs text-gray-500 mt-1">{page.description}</div>
-                            </div>
+                            <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                            {category.toUpperCase()}
                           </div>
-                        </td>
-                        {permissionTypes.map(permission => {
-                          const hasPermission = pagePermissions[permission.id] || false;
-                          return (
-                            <td key={permission.id} className="px-4 py-4 text-center">
-                              {isEditing ? (
-                                <label className="inline-flex items-center cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={hasPermission}
-                                    onChange={(e) => handlePermissionChange(page.id, selectedRole, permission.id, e.target.checked)}
-                                    className="form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out rounded focus:ring-blue-500 focus:ring-2"
-                                  />
-                                </label>
-                              ) : (
-                                <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${
-                                  hasPermission 
-                                    ? 'bg-green-100 text-green-600' 
-                                    : 'bg-gray-100 text-gray-400'
-                                }`}>
-                                  {hasPermission ? (
-                                    <Check className="w-4 h-4" />
-                                  ) : (
-                                    <X className="w-4 h-4" />
-                                  )}
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+                          {(() => {
+                            const categoryInfo = getCategoryPermissionInfo(category);
+                            return categoryInfo.disabled.length > 0 && (
+                              <div className="flex items-center text-xs text-gray-600">
+                                <span className={`mr-2 ${categoryInfo.color}`}>{categoryInfo.description}</span>
+                                {categoryInfo.disabled.length > 0 && (
+                                  <span className="bg-gray-300 text-gray-700 px-2 py-1 rounded-full">
+                                    Limited: {categoryInfo.disabled.join(', ')} disabled
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    {/* Pages in Category */}
+                    {pages.map((page, index) => {
+                      const currentPermissions = getCurrentPermissions();
+                      const pagePermissions = currentPermissions[page.id] && currentPermissions[page.id][selectedRole] 
+                        ? currentPermissions[page.id][selectedRole] 
+                        : getPageAccess(page.id, selectedRole);
+
+                      return (
+                        <tr key={page.id} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                          <td className="px-6 py-4 border-r border-gray-200 sticky left-0 bg-inherit z-10">
+                            <div className="flex items-center">
+                              <span className="text-xl mr-3">{page.icon}</span>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">{page.name}</div>
+                                <div className="text-xs text-gray-500 mt-1">{page.description}</div>
+                              </div>
+                            </div>
+                          </td>
+                          {permissionTypes.map(permission => {
+                            const hasPermission = pagePermissions[permission.id] || false;
+                            const applicablePermissions = getApplicablePermissions(page.id, page.category);
+                            const isPermissionApplicable = applicablePermissions.includes(permission.id);
+                            
+                            return (
+                              <td 
+                                key={permission.id} 
+                                className={`px-4 py-4 text-center ${
+                                  permission.id === 'approve' ? 'border-l-4 border-purple-300' : ''
+                                }`}
+                              >
+                                {isEditing ? (
+                                  <label className={`inline-flex items-center ${
+                                    isPermissionApplicable ? 'cursor-pointer' : 'cursor-not-allowed'
+                                  }`}>
+                                    <input
+                                      type="checkbox"
+                                      checked={hasPermission && isPermissionApplicable}
+                                      disabled={!isPermissionApplicable}
+                                      onChange={(e) => isPermissionApplicable && handlePermissionChange(page.id, selectedRole, permission.id, e.target.checked)}
+                                      className={`form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out rounded focus:ring-blue-500 focus:ring-2 ${
+                                        !isPermissionApplicable ? 'opacity-30 cursor-not-allowed' : ''
+                                      }`}
+                                      title={!isPermissionApplicable ? `${permission.name} permission not applicable for ${page.category} pages` : `Toggle ${permission.name} permission for ${page.name}`}
+                                    />
+                                    {!isPermissionApplicable && (
+                                      <span className="ml-2 text-xs text-gray-400 font-medium">N/A</span>
+                                    )}
+                                  </label>
+                                ) : (
+                                  <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${
+                                    hasPermission && isPermissionApplicable
+                                      ? 'bg-green-100 text-green-600 shadow-sm' 
+                                      : !isPermissionApplicable
+                                      ? 'bg-gray-50 text-gray-300'
+                                      : 'bg-gray-100 text-gray-400'
+                                  }`}
+                                  title={!isPermissionApplicable 
+                                    ? `${permission.name} permission not applicable for ${page.category} pages` 
+                                    : hasPermission 
+                                    ? `${page.name} has ${permission.name} permission` 
+                                    : `${page.name} does not have ${permission.name} permission`
+                                  }>
+                                    {hasPermission && isPermissionApplicable ? (
+                                      <Check className="w-4 h-4" />
+                                    ) : !isPermissionApplicable ? (
+                                      <span className="text-xs font-medium">N/A</span>
+                                    ) : (
+                                      <X className="w-4 h-4" />
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
         
         {/* Permission Summary */}
@@ -682,8 +806,13 @@ const PermissionsManagement = () => {
                 const updatedPermissions = { ...editablePermissions };
                 systemPages.forEach(page => {
                   if (!updatedPermissions[page.id]) updatedPermissions[page.id] = {};
+                  const applicablePermissions = getApplicablePermissions(page.id, page.category);
                   updatedPermissions[page.id][selectedRole] = {
-                    create: false, view: true, edit: false, delete: false, approve: false
+                    create: false, 
+                    view: applicablePermissions.includes('view'), 
+                    edit: false, 
+                    delete: false, 
+                    approve: false
                   };
                 });
                 setEditablePermissions(updatedPermissions);
@@ -698,8 +827,13 @@ const PermissionsManagement = () => {
                 const updatedPermissions = { ...editablePermissions };
                 systemPages.forEach(page => {
                   if (!updatedPermissions[page.id]) updatedPermissions[page.id] = {};
+                  const applicablePermissions = getApplicablePermissions(page.id, page.category);
                   updatedPermissions[page.id][selectedRole] = {
-                    create: true, view: true, edit: true, delete: false, approve: false
+                    create: applicablePermissions.includes('create'), 
+                    view: applicablePermissions.includes('view'), 
+                    edit: applicablePermissions.includes('edit'), 
+                    delete: false, 
+                    approve: false
                   };
                 });
                 setEditablePermissions(updatedPermissions);
@@ -714,8 +848,13 @@ const PermissionsManagement = () => {
                 const updatedPermissions = { ...editablePermissions };
                 systemPages.forEach(page => {
                   if (!updatedPermissions[page.id]) updatedPermissions[page.id] = {};
+                  const applicablePermissions = getApplicablePermissions(page.id, page.category);
                   updatedPermissions[page.id][selectedRole] = {
-                    create: true, view: true, edit: true, delete: true, approve: true
+                    create: applicablePermissions.includes('create'), 
+                    view: applicablePermissions.includes('view'), 
+                    edit: applicablePermissions.includes('edit'), 
+                    delete: applicablePermissions.includes('delete'), 
+                    approve: applicablePermissions.includes('approve')
                   };
                 });
                 setEditablePermissions(updatedPermissions);
