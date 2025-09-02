@@ -25,6 +25,7 @@ const CategoryManagement = () => {
     description: '',
     wastageCharges: 0,
     makingCharges: 0,
+    certificationCharges: 0,
     parentId: null,
     type: 'parent' // 'parent' or 'child'
   });
@@ -34,6 +35,7 @@ const CategoryManagement = () => {
     description: '',
     wastageCharges: 0,
     makingCharges: 0,
+    certificationCharges: 0,
     parentId: null,
     type: 'parent'
   });
@@ -159,6 +161,7 @@ const CategoryManagement = () => {
         description: '',
         wastageCharges: 0,
         makingCharges: 0,
+        certificationCharges: 0,
         parentId: null,
         type: 'parent'
       });
@@ -177,6 +180,7 @@ const CategoryManagement = () => {
         description: '',
         wastageCharges: 0,
         makingCharges: 0,
+        certificationCharges: 0,
         parentId: null,
         type: 'parent'
       };
@@ -237,6 +241,7 @@ const CategoryManagement = () => {
         description: '',
         wastageCharges: 0,
         makingCharges: 0,
+        certificationCharges: 0,
         parentId: null,
         type: 'parent'
       });
@@ -251,6 +256,7 @@ const CategoryManagement = () => {
       description: '',
       wastageCharges: 0,
       makingCharges: 0,
+      certificationCharges: 0,
       parentId: null,
       type: 'parent'
     });
@@ -379,6 +385,23 @@ const CategoryManagement = () => {
             ) : (
               <span className="text-green-600 font-medium">
                 ₹{(category.makingCharges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            )}
+          </td>
+          <td className="px-6 py-4">
+            {isEditing ? (
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={editingCategory.certificationCharges || 0}
+                onChange={(e) => setEditingCategory(prev => ({ ...prev, certificationCharges: parseFloat(e.target.value) || 0 }))}
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                placeholder="0.00"
+              />
+            ) : (
+              <span className="text-purple-600 font-medium">
+                ₹{(category.certificationCharges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             )}
           </td>
@@ -644,6 +667,18 @@ const CategoryManagement = () => {
                 placeholder="0.00"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Certification Charges (₹/carat)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={newCategory.certificationCharges}
+                onChange={(e) => setNewCategory(prev => ({ ...prev, certificationCharges: parseFloat(e.target.value) || 0 }))}
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                placeholder="0.00"
+              />
+            </div>
           </div>
           <div className="flex space-x-2 mt-4">
             <button
@@ -668,6 +703,7 @@ const CategoryManagement = () => {
                   description: '',
                   wastageCharges: 0,
                   makingCharges: 0,
+                  certificationCharges: 0,
                   parentId: null,
                   type: 'parent'
                 });
@@ -712,6 +748,7 @@ const CategoryManagement = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wastage (%)</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Making (₹)</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Certification (₹)</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>

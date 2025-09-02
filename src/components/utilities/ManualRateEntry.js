@@ -20,10 +20,10 @@ import SCREEN_IDS from '../../utils/screenIds';
 
 const ManualRateEntry = () => {
   const [goldRates, setGoldRates] = useState({
-    gold_24k_per_1g: '',
-    gold_22k_per_1g: '',
-    gold_18k_per_1g: '',
-    gold_14k_per_1g: ''
+    gold_24k_per_gram: '',
+    gold_22k_per_gram: '',
+    gold_18k_per_gram: '',
+    gold_14k_per_gram: ''
   });
   
   const [dollarRate, setDollarRate] = useState({
@@ -59,18 +59,18 @@ const ManualRateEntry = () => {
 
   // Auto-calculate other gold karats when 24k is entered
   useEffect(() => {
-    if (goldRates.gold_24k_per_1g) {
-      const baseRate = parseFloat(goldRates.gold_24k_per_1g);
+    if (goldRates.gold_24k_per_gram) {
+      const baseRate = parseFloat(goldRates.gold_24k_per_gram);
       if (!isNaN(baseRate) && baseRate > 0) {
         setGoldRates(prev => ({
           ...prev,
-          gold_22k_per_1g: Math.round(baseRate * 0.9167).toString(),
-          gold_18k_per_1g: Math.round(baseRate * 0.75).toString(),
-          gold_14k_per_1g: Math.round(baseRate * 0.5833).toString()
+          gold_22k_per_gram: Math.round(baseRate * 0.9167).toString(),
+          gold_18k_per_gram: Math.round(baseRate * 0.75).toString(),
+          gold_14k_per_gram: Math.round(baseRate * 0.5833).toString()
         }));
       }
     }
-  }, [goldRates.gold_24k_per_1g]);
+  }, [goldRates.gold_24k_per_gram]);
 
   // Load current rates from database
   const loadCurrentRates = async () => {
@@ -140,7 +140,7 @@ const ManualRateEntry = () => {
 
   // Save gold rates manually
   const saveGoldRates = async () => {
-    if (!goldRates.gold_24k_per_1g) {
+    if (!goldRates.gold_24k_per_gram) {
       setError('Please enter at least the 24K gold rate');
       return;
     }
@@ -150,7 +150,7 @@ const ManualRateEntry = () => {
     
     try {
       const token = localStorage.getItem('token');
-      // Convert per gram rates to per 10g for database storage
+      // Save rates as per gram (multiply by 10 for database storage which expects per 10g)
       const response = await fetch('/api/rates/gold/manual', {
         method: 'POST',
         headers: {
@@ -158,12 +158,12 @@ const ManualRateEntry = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          gold_24k_per_10g: parseFloat(goldRates.gold_24k_per_1g) * 10,
-          gold_22k_per_10g: parseFloat(goldRates.gold_22k_per_1g) * 10,
-          gold_18k_per_10g: parseFloat(goldRates.gold_18k_per_1g) * 10,
-          gold_14k_per_10g: parseFloat(goldRates.gold_14k_per_1g) * 10,
+          gold_24k_per_10g: parseFloat(goldRates.gold_24k_per_gram),
+          gold_22k_per_10g: parseFloat(goldRates.gold_22k_per_gram),
+          gold_18k_per_10g: parseFloat(goldRates.gold_18k_per_gram),
+          gold_14k_per_10g: parseFloat(goldRates.gold_14k_per_gram),
           source: 'manual entry',
-          notes: 'Manual entry due to API failure'
+          notes: 'Manual entry - rate stored as per gram in gold_24k_per_10g column'
         })
       });
 
@@ -173,10 +173,10 @@ const ManualRateEntry = () => {
         setSuccess('Gold rates saved successfully!');
         setEditMode(prev => ({ ...prev, gold: false }));
         setGoldRates({
-          gold_24k_per_1g: '',
-          gold_22k_per_1g: '',
-          gold_18k_per_1g: '',
-          gold_14k_per_1g: ''
+          gold_24k_per_gram: '',
+          gold_22k_per_gram: '',
+          gold_18k_per_gram: '',
+          gold_14k_per_gram: ''
         });
         await loadCurrentRates();
         setTimeout(() => setSuccess(''), 3000);
@@ -358,7 +358,7 @@ const ManualRateEntry = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center">
               <Gem className="w-5 h-5 mr-2 text-yellow-500" />
-              Gold Rates (per 1g)
+              Gold Rates (per gram)
             </h2>
             <button
               onClick={() => setEditMode(prev => ({ ...prev, gold: !prev.gold }))}
@@ -377,7 +377,7 @@ const ManualRateEntry = () => {
                   <div className="text-sm text-yellow-600">Pure Gold (99.9%)</div>
                 </div>
                 <div className="text-xl font-bold text-yellow-700">
-                  {formatCurrency(currentRates.gold.gold_24k_per_10g / 10)}
+                  {formatCurrency(currentRates.gold.gold_24k_per_10g)}
                 </div>
               </div>
               <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
@@ -386,7 +386,7 @@ const ManualRateEntry = () => {
                   <div className="text-sm text-orange-600">Jewelry Grade (91.6%)</div>
                 </div>
                 <div className="text-xl font-bold text-orange-700">
-                  {formatCurrency(currentRates.gold.gold_22k_per_10g / 10)}
+                  {formatCurrency(currentRates.gold.gold_22k_per_10g)}
                 </div>
               </div>
               <div className="text-center text-xs text-gray-500 mt-2">
@@ -400,27 +400,27 @@ const ManualRateEntry = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  24K Gold Rate (per 1g) *
+                  24K Gold Rate (per gram) *
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  value={goldRates.gold_24k_per_1g}
-                  onChange={(e) => setGoldRates(prev => ({ ...prev, gold_24k_per_1g: e.target.value }))}
+                  value={goldRates.gold_24k_per_10g}
+                  onChange={(e) => setGoldRates(prev => ({ ...prev, gold_24k_per_10g: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                  placeholder="Enter 24K gold rate"
+                  placeholder="Enter 24K gold rate per gram"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  22K Gold Rate (per 1g)
+                  22K Gold Rate (per gram)
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  value={goldRates.gold_22k_per_1g}
-                  onChange={(e) => setGoldRates(prev => ({ ...prev, gold_22k_per_1g: e.target.value }))}
+                  value={goldRates.gold_22k_per_10g}
+                  onChange={(e) => setGoldRates(prev => ({ ...prev, gold_22k_per_10g: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   placeholder="Auto-calculated"
                 />
@@ -428,13 +428,13 @@ const ManualRateEntry = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  18K Gold Rate (per 1g)
+                  18K Gold Rate (per gram)
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  value={goldRates.gold_18k_per_1g}
-                  onChange={(e) => setGoldRates(prev => ({ ...prev, gold_18k_per_1g: e.target.value }))}
+                  value={goldRates.gold_18k_per_10g}
+                  onChange={(e) => setGoldRates(prev => ({ ...prev, gold_18k_per_10g: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   placeholder="Auto-calculated"
                 />
@@ -442,13 +442,13 @@ const ManualRateEntry = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  14K Gold Rate (per 1g)
+                  14K Gold Rate (per gram)
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  value={goldRates.gold_14k_per_1g}
-                  onChange={(e) => setGoldRates(prev => ({ ...prev, gold_14k_per_1g: e.target.value }))}
+                  value={goldRates.gold_14k_per_10g}
+                  onChange={(e) => setGoldRates(prev => ({ ...prev, gold_14k_per_10g: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   placeholder="Auto-calculated"
                 />
@@ -707,8 +707,8 @@ const ManualRateEntry = () => {
             <h4 className="font-medium text-yellow-700 mb-2">Gold Rates:</h4>
             <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
               <li>Enter 24K rate - other karats auto-calculate</li>
-              <li>Rates are per 1 gram in INR</li>
-              <li>Used for jewelry pricing calculations</li>
+              <li>Rates are per gram in INR</li>
+              <li>Used directly for jewelry pricing calculations</li>
               <li>Stored in database with timestamp</li>
             </ul>
           </div>
