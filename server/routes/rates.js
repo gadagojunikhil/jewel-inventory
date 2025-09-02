@@ -499,6 +499,245 @@ router.get('/scheduler/status', auth, (req, res) => {
   }
 });
 
+// Manual save gold rates
+router.post('/gold/manual', auth, async (req, res) => {
+  try {
+    const { 
+      gold_24k_per_10g, 
+      gold_22k_per_10g, 
+      gold_18k_per_10g, 
+      gold_14k_per_10g, 
+      source, 
+      notes 
+    } = req.body;
+    
+    const today = formatDate();
+
+    // Validate required 24k rate
+    if (!gold_24k_per_10g || isNaN(parseFloat(gold_24k_per_10g))) {
+      return res.status(400).json({
+        success: false,
+        message: '24K gold rate is required and must be a valid number'
+      });
+    }
+
+    // Check if rate already exists for today
+    const existingRate = await pool.query(
+      'SELECT id FROM gold_rates WHERE rate_date = $1',
+      [today]
+    );
+
+    let result;
+    if (existingRate.rows.length > 0) {
+      // Update existing rate
+      result = await pool.query(
+        `UPDATE gold_rates 
+         SET gold_24k_per_10g = $1, gold_22k_per_10g = $2, gold_18k_per_10g = $3, 
+             gold_14k_per_10g = $4, source = $5, notes = $6, fetched_at = CURRENT_TIMESTAMP,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE rate_date = $7 
+         RETURNING *`,
+        [
+          parseFloat(gold_24k_per_10g),
+          parseFloat(gold_22k_per_10g || 0),
+          parseFloat(gold_18k_per_10g || 0),
+          parseFloat(gold_14k_per_10g || 0),
+          source || 'manual entry',
+          notes || 'Manual entry by admin',
+          today
+        ]
+      );
+    } else {
+      // Insert new rate
+      result = await pool.query(
+        `INSERT INTO gold_rates 
+         (rate_date, gold_24k_per_10g, gold_22k_per_10g, gold_18k_per_10g, 
+          gold_14k_per_10g, source, notes) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7) 
+         RETURNING *`,
+        [
+          today,
+          parseFloat(gold_24k_per_10g),
+          parseFloat(gold_22k_per_10g || 0),
+          parseFloat(gold_18k_per_10g || 0),
+          parseFloat(gold_14k_per_10g || 0),
+          source || 'manual entry',
+          notes || 'Manual entry by admin'
+        ]
+      );
+    }
+
+    // Log successful manual entry
+    await logFetchAttempt('gold', 'success', 'manual entry', null, JSON.stringify({
+      gold_24k_per_10g: parseFloat(gold_24k_per_10g),
+      gold_22k_per_10g: parseFloat(gold_22k_per_10g || 0),
+      gold_18k_per_10g: parseFloat(gold_18k_per_10g || 0),
+      gold_14k_per_10g: parseFloat(gold_14k_per_10g || 0)
+    }));
+
+    res.json({
+      success: true,
+      rate: result.rows[0],
+      message: 'Gold rates saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error saving manual gold rates:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save gold rates: ' + error.message
+    });
+  }
+});
+
+// Manual save dollar rates
+router.post('/dollar/manual', auth, async (req, res) => {
+  try {
+    const { usd_to_inr, source, notes } = req.body;
+    const today = formatDate();
+
+    // Validate required rate
+    if (!usd_to_inr || isNaN(parseFloat(usd_to_inr))) {
+      return res.status(400).json({
+        success: false,
+        message: 'USD to INR rate is required and must be a valid number'
+      });
+    }
+
+    const usdToInrRate = parseFloat(usd_to_inr);
+    const inrToUsdRate = 1 / usdToInrRate;
+
+    // Check if rate already exists for today
+    const existingRate = await pool.query(
+      'SELECT id FROM dollar_rates WHERE rate_date = $1',
+      [today]
+    );
+
+    let result;
+    if (existingRate.rows.length > 0) {
+      // Update existing rate
+      result = await pool.query(
+        `UPDATE dollar_rates 
+         SET usd_to_inr = $1, inr_to_usd = $2, source = $3, notes = $4, 
+             fetched_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+         WHERE rate_date = $5 
+         RETURNING *`,
+        [
+          usdToInrRate,
+          inrToUsdRate,
+          source || 'manual entry',
+          notes || 'Manual entry by admin',
+          today
+        ]
+      );
+    } else {
+      // Insert new rate
+      result = await pool.query(
+        `INSERT INTO dollar_rates (rate_date, usd_to_inr, inr_to_usd, source, notes) 
+         VALUES ($1, $2, $3, $4, $5) 
+         RETURNING *`,
+        [
+          today,
+          usdToInrRate,
+          inrToUsdRate,
+          source || 'manual entry',
+          notes || 'Manual entry by admin'
+        ]
+      );
+    }
+
+    // Log successful manual entry
+    await logFetchAttempt('dollar', 'success', 'manual entry', null, JSON.stringify({
+      usd_to_inr: usdToInrRate,
+      inr_to_usd: inrToUsdRate
+    }));
+
+    res.json({
+      success: true,
+      rate: result.rows[0],
+      message: 'Dollar rates saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error saving manual dollar rates:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save dollar rates: ' + error.message
+    });
+  }
+});
+
+// Get tax rates (latest)
+router.get('/tax/latest', auth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM tax_rates WHERE is_active = true ORDER BY created_at DESC LIMIT 1'
+    );
+
+    if (result.rows.length > 0) {
+      res.json({
+        success: true,
+        rate: result.rows[0]
+      });
+    } else {
+      res.json({
+        success: true,
+        rate: null,
+        message: 'No tax rates configured'
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching tax rates:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch tax rates'
+    });
+  }
+});
+
+// Manual save tax rates
+router.post('/tax/manual', auth, async (req, res) => {
+  try {
+    const { gst_percentage, customs_duty, state_tax } = req.body;
+
+    // Validate at least one tax rate is provided
+    if (!gst_percentage && !customs_duty && !state_tax) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one tax rate must be provided'
+      });
+    }
+
+    // Deactivate existing tax rates
+    await pool.query('UPDATE tax_rates SET is_active = false WHERE is_active = true');
+
+    // Insert new tax rates
+    const result = await pool.query(
+      `INSERT INTO tax_rates (gst_percentage, customs_duty, state_tax, is_active) 
+       VALUES ($1, $2, $3, true) 
+       RETURNING *`,
+      [
+        gst_percentage ? parseFloat(gst_percentage) : null,
+        customs_duty ? parseFloat(customs_duty) : null,
+        state_tax ? parseFloat(state_tax) : null
+      ]
+    );
+
+    res.json({
+      success: true,
+      rate: result.rows[0],
+      message: 'Tax rates saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error saving manual tax rates:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save tax rates: ' + error.message
+    });
+  }
+});
+
 // Manual trigger for rates (admin only)
 router.post('/scheduler/trigger', auth, async (req, res) => {
   try {
