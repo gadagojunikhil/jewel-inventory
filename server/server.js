@@ -6,6 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const session = require('express-session');
 
 console.log('Environment variables:', {
   PORT: process.env.PORT,
@@ -25,6 +26,7 @@ const errorHandler = require('./middleware/errorHandler');
 const inventoryRoutes = require('./routes/inventory');
 const usersRoutes = require('./routes/users');
 const ratesRoutes = require('./routes/rates');
+const estimatesRoutes = require('./routes/estimates');
 console.log('Routes loaded successfully');
 
 const app = express();
@@ -52,6 +54,19 @@ app.use(cors({
   ],
   credentials: true
 }));
+
+// Session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    httpOnly: true, // Prevent XSS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -64,7 +79,8 @@ app.use('/api/vendors', vendorRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/permissions', permissionsRoutes);
-app.use('/api/rates', ratesRoutes); 
+app.use('/api/rates', ratesRoutes);
+app.use('/api/estimates', estimatesRoutes); 
 
 // Health check
 app.get('/api/health', (req, res) => {

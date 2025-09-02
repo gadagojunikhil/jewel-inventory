@@ -23,62 +23,105 @@ const AddInventory = () => {
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [currentGoldRate, setCurrentGoldRate] = useState(10000); // Default rate from dpgold.com
   
-  // Load data from localStorage
+  // Load data from database
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     try {
-      const savedJewelry = localStorage.getItem('jewelryPieces');
-      const savedMaterials = localStorage.getItem('materials');
-      const savedCategories = localStorage.getItem('jewelryCategories');
-      const savedVendors = localStorage.getItem('vendors');
-      
-      if (savedJewelry) {
-        const jewelry = JSON.parse(savedJewelry);
-        setJewelryPieces(Array.isArray(jewelry) ? jewelry : []);
-      } else {
-        setJewelryPieces([]);
-      }
-      
-      if (savedMaterials) {
-        const materials = JSON.parse(savedMaterials);
-        setMaterials(Array.isArray(materials) ? materials : []);
-      } else {
-        setMaterials([]);
-      }
-      
-      if (savedCategories) {
-        const categories = JSON.parse(savedCategories);
-        if (Array.isArray(categories)) {
-          setJewelryCategories(categories);
-          setCategories(categories);
-        } else {
-          setJewelryCategories([]);
-          setCategories([]);
-        }
-      } else {
-        setJewelryCategories([]);
-        setCategories([]);
-      }
-      
-      if (savedVendors) {
-        const vendors = JSON.parse(savedVendors);
-        setVendors(Array.isArray(vendors) ? vendors : []);
-      } else {
-        setVendors([]);
-      }
+      // Load jewelry pieces from database
+      await loadJewelryPieces();
+      await loadMaterials();
+      await loadCategories();
+      await loadVendors();
     } catch (error) {
       console.error('Error loading data:', error);
-      // Set default empty arrays to prevent undefined errors
+    }
+  };
+
+  const loadJewelryPieces = async () => {
+    try {
+      const response = await fetch('/api/jewelry', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setJewelryPieces(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error loading jewelry pieces:', error);
       setJewelryPieces([]);
+    }
+  };
+  const loadMaterials = async () => {
+    try {
+      const response = await fetch('/api/materials', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setMaterials(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error loading materials:', error);
       setMaterials([]);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await fetch('/api/categories', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setJewelryCategories(data);
+          setCategories(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
       setJewelryCategories([]);
       setCategories([]);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  const loadVendors = async () => {
+    try {
+      const response = await fetch('/api/vendors', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setVendors(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error loading vendors:', error);
       setVendors([]);
     }
   };
+
+  const loadCurrentGoldRate = async () => {
+    try {
+      const response = await fetch('/api/rates/gold/today', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.rate) {
+          const goldRatePerGram = data.rate.gold_24k_per_10g / 10; // Convert from per 10g to per gram
+          setCurrentGoldRate(goldRatePerGram);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading gold rate:', error);
+    }
+  };
+
   
   // Form state based on your requirements
   const [inventoryData, setInventoryData] = useState({
@@ -149,130 +192,10 @@ const AddInventory = () => {
     return () => clearTimeout(fallbackTimer);
   }, []);
 
-  // Load categories
-  const loadCategories = async () => {
-    setCategoriesLoading(true);
-    try {
-      let token = localStorage.getItem('token');
-      
-      // If no token, try to get one from login
-      if (!token) {
-        console.warn('No token found, attempting to get token...');
-        try {
-          const loginResponse = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              username: 'admin',
-              password: 'Admin@123'
-            })
-          });
-          
-          if (loginResponse.ok) {
-            const loginData = await loginResponse.json();
-            token = loginData.token;
-            localStorage.setItem('token', token);
-            console.log('Token obtained for categories');
-          }
-        } catch (loginError) {
-          console.error('Failed to get token:', loginError);
-        }
-      }
-      
-      if (!token) {
-        console.warn('Still no token available, will use default categories');
-        setCategoriesLoading(false);
-        return;
-      }
-      
-      const response = await fetch('/api/categories', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Categories loaded from API:', data);
-        setCategories(data);
-        setJewelryCategories(data); // Also update jewelryCategories for compatibility
-        setCategoriesLoading(false);
-      } else {
-        console.warn('Failed to load categories from API, status:', response.status);
-        if (response.status === 401) {
-          // Token might be expired, try to refresh
-          localStorage.removeItem('token');
-        }
-        setCategoriesLoading(false);
-      }
-    } catch (error) {
-      console.error('Error loading categories:', error);
-      setCategoriesLoading(false);
-    }
-  };
+  // Form state based on your requirements
 
   // Load vendors
-  const loadVendors = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.warn('No token found, using local vendors data');
-        return;
-      }
-      
-      const response = await fetch('/api/vendors', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setVendors(data);
-      } else {
-        console.warn('Failed to load vendors from API, status:', response.status);
-      }
-    } catch (error) {
-      console.error('Error loading vendors:', error);
-    }
-  };
 
-  // Load current gold rate from the utilities
-  const loadCurrentGoldRate = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.warn('No token found, using default gold rate');
-        return;
-      }
-      
-      const response = await fetch('/api/rates/gold/today', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.rate) {
-          // Convert from per 10g to per gram and then to 24K rate
-          const rate24K = parseFloat(data.rate.gold_24k_per_10g) / 10;
-          setCurrentGoldRate(rate24K);
-          setInventoryData(prev => ({
-            ...prev,
-            goldRate: rate24K
-          }));
-        }
-      } else {
-        console.warn('Failed to load gold rate from API, status:', response.status);
-      }
-    } catch (error) {
-      console.error('Error loading gold rate:', error);
-    }
-  };
 
   // Generate sequential item number based on category and current date
   const generateItemNumber = (categoryCode) => {
@@ -385,10 +308,9 @@ const AddInventory = () => {
         materials: [] // Will be expanded in stones section
       };
 
-      // Add to jewelry pieces and save to localStorage
       const updatedJewelryPieces = [...(jewelryPieces || []), newInventoryItem];
       setJewelryPieces(updatedJewelryPieces);
-      localStorage.setItem('jewelryPieces', JSON.stringify(updatedJewelryPieces));
+      
 
       // Reset form
       setInventoryData({

@@ -81,6 +81,27 @@ const usePermissions = () => {
         user: { access: false, level: 'none' },
         guest: { access: false, level: 'none' }
       }[role] || { access: false, level: 'none' },
+      'inr-estimate': {
+        super_admin: { access: true, level: 'full' },
+        admin: { access: true, level: 'full' },
+        manager: { access: true, level: 'edit' },
+        user: { access: true, level: 'view' },
+        guest: { access: false, level: 'none' }
+      }[role] || { access: false, level: 'none' },
+      'usd-estimate': {
+        super_admin: { access: true, level: 'full' },
+        admin: { access: true, level: 'full' },
+        manager: { access: true, level: 'edit' },
+        user: { access: true, level: 'view' },
+        guest: { access: false, level: 'none' }
+      }[role] || { access: false, level: 'none' },
+      'view-estimates': {
+        super_admin: { access: true, level: 'full' },
+        admin: { access: true, level: 'full' },
+        manager: { access: true, level: 'edit' },
+        user: { access: true, level: 'view' },
+        guest: { access: false, level: 'none' }
+      }[role] || { access: false, level: 'none' },
       'available-stock': { access: true, level: 'view' },
       'vendor-stock': { access: true, level: 'view' },
       'dollar-rate': {

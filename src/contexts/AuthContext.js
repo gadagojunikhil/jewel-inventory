@@ -17,28 +17,20 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in on mount
+    // Check if user is logged in on mount using server session
     checkAuth();
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-
-    if (token && savedUser) {
-      try {
-        // Verify token with backend
-        const currentUser = await api.getCurrentUser();
-        setUser(currentUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        // Clear invalid auth data
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-        setIsAuthenticated(false);
-      }
+    try {
+      // Check authentication with server session
+      const currentUser = await api.getCurrentUser();
+      setUser(currentUser);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setUser(null);
+      setIsAuthenticated(false);
     }
     setLoading(false);
   };
@@ -47,10 +39,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.login(username, password);
       
-      // Store token and user data
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
+      // Server will set secure httpOnly cookies
       setUser(response.user);
       setIsAuthenticated(true);
       
@@ -69,20 +58,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    api.logout();
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
     setUser(null);
     setIsAuthenticated(false);
   };
 
   const updateUser = (userData) => {
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  const setAuthData = (user, token) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+  const setAuthData = (user) => {
     setUser(user);
     setIsAuthenticated(true);
   };

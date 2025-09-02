@@ -115,9 +115,7 @@ const Login = () => {
 
       if (response.ok) {
         if (data.passwordResetRequired) {
-          // Store token and user data for password reset
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
+          // Session-based authentication
           setCurrentUser(data.user);
           setPasswordResetRequired(true);
           setShowPasswordReset(true);
@@ -161,13 +159,12 @@ const Login = () => {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/auth/change-password', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           currentPassword: resetPassword.current,
           newPassword: resetPassword.new
@@ -179,7 +176,8 @@ const Login = () => {
       if (response.ok) {
         setPasswordResetRequired(false);
         setShowPasswordReset(false);
-        setAuthData(currentUser, token);
+        // Session-based auth - user is already authenticated
+        window.location.reload(); // Refresh to load user session
       } else {
         setError(data.error || 'Password reset failed');
       }

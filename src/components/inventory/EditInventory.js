@@ -105,12 +105,12 @@ const EditInventory = ({ itemId, onBack, onEditItemClick }) => {
 
   const loadInventoryData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      
+      
 
       const response = await fetch('/api/inventory?limit=1000', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -128,16 +128,12 @@ const EditInventory = ({ itemId, onBack, onEditItemClick }) => {
 
   const loadCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found for loading categories');
-        return;
-      }
+      
 
       console.log('Loading categories...');
       const response = await fetch('/api/categories', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -156,16 +152,12 @@ const EditInventory = ({ itemId, onBack, onEditItemClick }) => {
 
   const loadVendors = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found for loading vendors');
-        return;
-      }
+      
 
       console.log('Loading vendors...');
       const response = await fetch('/api/vendors', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -184,12 +176,12 @@ const EditInventory = ({ itemId, onBack, onEditItemClick }) => {
 
   const loadMaterials = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      
+      
 
       const response = await fetch('/api/materials', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -207,12 +199,12 @@ const EditInventory = ({ itemId, onBack, onEditItemClick }) => {
 
   const loadCurrentGoldRate = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      
+      
 
       const response = await fetch('/api/rates/current', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -233,16 +225,12 @@ const EditInventory = ({ itemId, onBack, onEditItemClick }) => {
 
   const loadItemForEdit = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found for loading item');
-        return;
-      }
+      
 
       console.log('Loading item for edit:', id);
       const response = await fetch(`/api/inventory/${id}`, {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -512,7 +500,7 @@ const EditInventory = ({ itemId, onBack, onEditItemClick }) => {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      
       
       const updateData = {
         id: editingData.id,
@@ -532,8 +520,8 @@ const EditInventory = ({ itemId, onBack, onEditItemClick }) => {
 
       const response = await fetch(`/api/inventory/${editingData.id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(updateData)
@@ -586,11 +574,11 @@ const EditInventory = ({ itemId, onBack, onEditItemClick }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      
       const response = await fetch(`/api/inventory/${item.id}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

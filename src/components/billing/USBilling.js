@@ -7,11 +7,7 @@ const USBilling = () => {
   // Ref for Item Code input
   const itemCodeRef = React.useRef(null);
   
-  // Helper to get auth headers
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  };
+  // Session-based authentication
   
   // Categories for wastage/making lookup
   const [categories, setCategories] = useState([]);
@@ -57,7 +53,7 @@ const USBilling = () => {
   
   useEffect(() => {
     // Fetch gold rate
-    fetch('/api/rates/gold/today', { headers: getAuthHeaders() })
+    fetch('/api/rates/gold/today', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.success && data.rate && data.rate.gold_24k_per_10g != null && data.rate.gold_24k_per_10g !== '') {
@@ -77,7 +73,7 @@ const USBilling = () => {
       });
       
     // Fetch dollar rate
-    fetch('/api/rates/dollar/today', { headers: getAuthHeaders() })
+    fetch('/api/rates/dollar/today', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.success && data.rate) {
@@ -89,7 +85,7 @@ const USBilling = () => {
       });
       
     // Fetch categories
-    fetch('/api/categories', { headers: getAuthHeaders() })
+    fetch('/api/categories', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -183,7 +179,7 @@ const USBilling = () => {
       // Extract category code from item code (e.g., DNS-1 -> DNS)
       const categoryCode = normalizedCode.split('-')[0];
       
-      const res = await fetch(`/api/jewelry/details/${normalizedCode}`, { headers: getAuthHeaders() });
+      const res = await fetch(`/api/jewelry/details/${normalizedCode}`, { credentials: 'include' });
       const data = await res.json();
       if (data && data.code === normalizedCode) {
         setPurity(data.gold_purity || '');
@@ -243,7 +239,7 @@ const USBilling = () => {
   const calculateDiamondCarats = async (jewelryId, stones) => {
     try {
       // First, get all diamond material codes from materials table
-      const diamondRes = await fetch('/api/materials/category/Diamond', { headers: getAuthHeaders() });
+      const diamondRes = await fetch('/api/materials/category/Diamond', { credentials: 'include' });
       const diamondData = await diamondRes.json();
       
       if (diamondData && Array.isArray(diamondData)) {
@@ -621,15 +617,9 @@ function TotalSection({ totalGoldAmount, stoneTotal, dollarRate, diamondCarats: 
     }
   };
 
-  // Helper to get auth headers
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  };
-
   // Fetch tax rates on mount
   useEffect(() => {
-    fetch('/api/rates/tax/latest', { headers: getAuthHeaders() })
+    fetch('/api/rates/tax/latest', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.success && data.rate) {

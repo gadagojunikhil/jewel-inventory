@@ -21,12 +21,16 @@ import EditInventory from './components/inventory/EditInventory';
 import IndianBilling from './components/billing/IndianBilling';
 import USBilling from './components/billing/USBilling';
 
+// Estimate Components
+import INREstimate from './components/estimates/INREstimate';
+import USDEstimate from './components/estimates/USDEstimate';
+import ViewEstimates from './components/estimates/ViewEstimates';
+
 // Reports Components
 import AvailableStock from './components/reports/AvailableStock';
 import VendorStock from './components/reports/VendorStock';
 
 // Utilities Components
-import DataSync from './components/utilities/DataSync';
 import DollarRate from './components/utilities/DollarRate';
 import GoldRate from './components/utilities/GoldRate';
 import ManualRateEntry from './components/utilities/ManualRateEntry';
@@ -34,8 +38,6 @@ import ManualRateEntry from './components/utilities/ManualRateEntry';
 // Shared Components
 import Sidebar from './components/shared/Sidebar';
 import { Dashboard } from './components/shared/Dashboard';
-import PageIdentifier from './components/shared/PageIdentifier';
-import SCREEN_IDS from './utils/screenIds';
 
 // Icons
 import { Menu, LogOut, User } from 'lucide-react';
@@ -121,6 +123,12 @@ function AppContent() {
         return <IndianBilling />;
       case 'us-billing':
         return <USBilling />;
+      case 'inr-estimate':
+        return <INREstimate />;
+      case 'usd-estimate':
+        return <USDEstimate />;
+      case 'view-estimates':
+        return <ViewEstimates />;
       case 'available-stock':
         return <AvailableStock />;
       case 'vendor-stock':
@@ -131,8 +139,6 @@ function AppContent() {
         return <DollarRate />;
       case 'manual-rate-entry':
         return <ManualRateEntry />;
-      case 'data-sync':
-        return <DataSync />;
       // case 'upload-jewelry':
       //   return <UploadJewelry />; // Future Enhancement
       default:

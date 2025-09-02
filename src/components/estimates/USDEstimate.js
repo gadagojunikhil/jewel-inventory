@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Gem, DollarSign, User, Phone, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Gem, Calculator, User, Phone, Save, FileText, DollarSign } from 'lucide-react';
 import PageIdentifier from '../shared/PageIdentifier';
 import SCREEN_IDS from '../../utils/screenIds';
 
-const IndianBilling = () => {
+const USDEstimate = () => {
   // Ref for Item Code input
   const itemCodeRef = React.useRef(null);
   
@@ -12,23 +12,32 @@ const IndianBilling = () => {
   // Categories for wastage/making lookup
   const [categories, setCategories] = useState([]);
 
-  // Section 1: Header & Rates
+  // Section 1: Header & Customer Info
   const [date, setDate] = useState(() => {
     const today = new Date();
-    // Get local date in YYYY-MM-DD format
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   });
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [validUntil, setValidUntil] = useState(() => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30); // 30 days validity
+    const yyyy = futureDate.getFullYear();
+    const mm = String(futureDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(futureDate.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [goldRate, setGoldRate] = useState('');
   const [goldRateEditable, setGoldRateEditable] = useState(false);
   const [dollarRate, setDollarRate] = useState('');
 
   // Section 2: Jewelry & Gold Calculation
   const [itemCode, setItemCode] = useState('');
+  const [jewelryName, setJewelryName] = useState('');
   const [purity, setPurity] = useState('');
   const [grossWeight, setGrossWeight] = useState('');
   const [netWeight, setNetWeight] = useState('');
@@ -44,11 +53,13 @@ const IndianBilling = () => {
   // Stone calculations
   const [stoneTotal, setStoneTotal] = useState(0);
   const [fetchedStones, setFetchedStones] = useState([]);
-
-  // Certification charges - similar to USBilling
-  const [categoryInfo, setCategoryInfo] = useState(null);
   const [diamondCarats, setDiamondCarats] = useState(0);
   const [certificationRequired, setCertificationRequired] = useState(false);
+  const [categoryInfo, setCategoryInfo] = useState(null);
+
+  // Additional fields
+  const [notes, setNotes] = useState('');
+  const [saveStatus, setSaveStatus] = useState('');
 
   // Fetch rates and categories on mount
   const [goldRateError, setGoldRateError] = useState('');
@@ -64,13 +75,13 @@ const IndianBilling = () => {
           setGoldRateEditable(false);
         } else {
           setGoldRate('');
-          setGoldRateError('Gold rate not found for today. Please enter today\'s rate in Manual Rate Entry (UTIL-003) or enter manually below.');
+          setGoldRateError('Gold rate not found for today. Please enter today\'s rate manually.');
           setGoldRateEditable(true);
         }
       })
       .catch(() => {
         setGoldRate('');
-        setGoldRateError('Failed to fetch gold rate. Please check your connection or enter rate manually.');
+        setGoldRateError('Failed to fetch gold rate. Please enter rate manually.');
         setGoldRateEditable(true);
       });
       
@@ -91,22 +102,11 @@ const IndianBilling = () => {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          console.log('Categories loaded:', data); // Debug log
           setCategories(data);
-        } else {
-          setCategories([
-            { id: 1, name: 'Rings', code: 'RNG', wastage_charges: 8, making_charges: 500 },
-            { id: 2, name: 'Necklaces', code: 'DNS', wastage_charges: 10, making_charges: 800 },
-            { id: 3, name: 'Earrings', code: 'EAR', wastage_charges: 6, making_charges: 400 }
-          ]);
         }
       })
       .catch(() => {
-        setCategories([
-          { id: 1, name: 'Rings', code: 'RNG', wastage_charges: 8, making_charges: 500 },
-          { id: 2, name: 'Necklaces', code: 'DNS', wastage_charges: 10, making_charges: 800 },
-          { id: 3, name: 'Earrings', code: 'EAR', wastage_charges: 6, making_charges: 400 }
-        ]);
+        setCategories([]);
       });
   }, []);
 
@@ -122,7 +122,6 @@ const IndianBilling = () => {
   // Calculate gold price (based on purity)
   useEffect(() => {
     if (goldRate && purity) {
-      // Gold rate is already per gram, just apply purity
       setGoldPrice((parseFloat(goldRate) * parseFloat(purity) / 24).toFixed(2));
     } else {
       setGoldPrice('');
@@ -164,38 +163,26 @@ const IndianBilling = () => {
     setTotalGoldAmount((gv + wa + ma).toFixed(2));
   }, [goldValue, wastageAmount, makingAmount]);
 
-  // Date validation
-  const handleDateChange = (e) => {
-    const val = e.target.value;
-    const today = new Date().toISOString().split('T')[0];
-    if (val > today) return; // Block future dates
-    setDate(val);
-  };
-
   // Fetch jewelry details by Item Code
   const fetchJewelryDetails = async (code) => {
     if (!code) return;
     try {
       const normalizedCode = code.trim().toUpperCase();
-      
-      // Extract category code from item code (e.g., DNS-1 -> DNS)
       const categoryCode = normalizedCode.split('-')[0];
       
       const res = await fetch(`/api/jewelry/details/${normalizedCode}`, { credentials: 'include' });
       const data = await res.json();
       if (data && data.code === normalizedCode) {
+        setJewelryName(data.name || '');
         setPurity(data.gold_purity || '');
         setGrossWeight(data.gross_weight || '');
         setNetWeight(data.net_weight || '');
         
-        // Set certification requirement from jewelry_pieces table
         setCertificationRequired(data.certificate === 'Yes');
         
-        // Auto-populate stones
         const stones = data.stones || [];
         setFetchedStones(stones);
         
-        // Calculate total diamond carats if certification is required
         if (data.certificate === 'Yes') {
           await calculateDiamondCarats(data.id, stones);
         } else {
@@ -207,26 +194,15 @@ const IndianBilling = () => {
         setCertificationRequired(false);
       }
       
-      // Find category by code to get wastage/making/certification charges
+      // Find category by code
       if (categoryCode && categories.length > 0) {
         const cat = categories.find(c => c.code === categoryCode);
         if (cat) {
-          console.log('Found category:', cat); // Debug log
           setCategoryInfo(cat);
-          setWastagePercent(cat.wastage_charges || cat.wastageCharges || '');
-          setMakingCharge(cat.making_charges || cat.makingCharges || '');
+          setWastagePercent(cat.wastage_charges || '');
+          setMakingCharge(cat.making_charges || '');
         } else {
-          console.log('Category not found for code:', categoryCode, 'Available categories:', categories); // Debug log
-          // If direct match not found, try finding by name
-          const catByName = categories.find(c => c.name?.toUpperCase().includes(categoryCode));
-          if (catByName) {
-            console.log('Found category by name:', catByName); // Debug log
-            setCategoryInfo(catByName);
-            setWastagePercent(catByName.wastage_charges || catByName.wastageCharges || '');
-            setMakingCharge(catByName.making_charges || catByName.makingCharges || '');
-          } else {
-            setCategoryInfo(null);
-          }
+          setCategoryInfo(null);
         }
       }
     } catch (err) {
@@ -237,29 +213,20 @@ const IndianBilling = () => {
     }
   };
 
-  // Calculate diamond carats based on materials table and jewelry_stones
+  // Calculate diamond carats
   const calculateDiamondCarats = async (jewelryId, stones) => {
     try {
-      // First, get all diamond material codes from materials table
       const diamondRes = await fetch('/api/materials/category/Diamond', { credentials: 'include' });
       const diamondData = await diamondRes.json();
       
       if (diamondData && Array.isArray(diamondData)) {
         const diamondCodes = diamondData.map(material => material.code);
-        console.log('Diamond codes from materials:', diamondCodes);
-        
-        // Filter stones that match diamond codes and calculate total weight
         const diamondStones = stones.filter(stone => 
           diamondCodes.includes(stone.stone_code)
         );
-        
         const totalDiamondCarats = diamondStones.reduce((total, stone) => 
           total + (parseFloat(stone.weight) || 0), 0
         );
-        
-        console.log('Diamond stones found:', diamondStones);
-        console.log('Total diamond carats:', totalDiamondCarats);
-        
         setDiamondCarats(totalDiamondCarats);
       } else {
         setDiamondCarats(0);
@@ -270,8 +237,80 @@ const IndianBilling = () => {
     }
   };
 
+  // Save estimate
+  const saveEstimate = async () => {
+    try {
+      setSaveStatus('saving');
+
+      // Prepare stone details for JSON storage
+      const stoneDetails = fetchedStones.map(stone => ({
+        id: stone.id,
+        code: stone.stone_code,
+        name: stone.stone_name,
+        weight: stone.weight,
+        rate: stone.sale_price,
+        cost: parseFloat(stone.weight) * parseFloat(stone.sale_price)
+      }));
+
+      const estimateData = {
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
+        item_code: itemCode,
+        jewelry_name: jewelryName,
+        category_id: categoryInfo?.id || null,
+        gold_purity: parseFloat(purity) || null,
+        gross_weight: parseFloat(grossWeight) || null,
+        net_weight: parseFloat(netWeight) || null,
+        fine_weight: parseFloat(fineWeight) || null,
+        gold_rate: parseFloat(goldRate) || null,
+        gold_price: parseFloat(goldPrice) || null,
+        gold_value: parseFloat(goldValue) || null,
+        wastage_percent: parseFloat(wastagePercent) || null,
+        wastage_amount: parseFloat(wastageAmount) || null,
+        making_charge_per_gram: parseFloat(makingCharge) || null,
+        making_amount: parseFloat(makingAmount) || null,
+        total_gold_amount: parseFloat(totalGoldAmount) || null,
+        stone_total: parseFloat(stoneTotal) || null,
+        stone_details: stoneDetails,
+        diamond_carats: parseFloat(diamondCarats) || null,
+        certification_required: certificationRequired,
+        certification_charges: 0, // Will be calculated on backend
+        currency: 'USD',
+        usd_to_inr_rate: parseFloat(dollarRate) || null,
+        tax_rate: 13.75, // Default combined tax percentage for US
+        valid_until: validUntil,
+        notes: notes
+      };
+
+      const response = await fetch('/api/estimates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(estimateData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus(''), 3000);
+      } else {
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving estimate:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
+  };
+
   const clearForm = () => {
     setItemCode('');
+    setJewelryName('');
     setPurity('');
     setGrossWeight('');
     setNetWeight('');
@@ -285,44 +324,84 @@ const IndianBilling = () => {
     setTotalGoldAmount('');
     setFetchedStones([]);
     setStoneTotal(0);
-    setStones([]);
-    
-    // Reset certification data
-    setCategoryInfo(null);
     setDiamondCarats(0);
     setCertificationRequired(false);
-    
+    setCategoryInfo(null);
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerEmail('');
+    setNotes('');
     if (itemCodeRef.current) {
       itemCodeRef.current.focus();
     }
   };
 
-  // Stones state moved here to be at the top level of the component
-  const [stones, setStones] = useState([]);
-
   return (
     <div className="p-4 pb-12 min-h-screen bg-gray-100">
-      <PageIdentifier pageId={SCREEN_IDS?.BILLING?.INDIAN_BILLING || 'BILL-001'} pageName="Indian Billing" />
-      <h1 className="text-2xl font-bold mb-4">Indian Jewelry Billing</h1>
+      <PageIdentifier pageId={SCREEN_IDS?.ESTIMATES?.USD_ESTIMATE || 'EST-002'} pageName="USD Estimate" />
+      <h1 className="text-2xl font-bold mb-4 flex items-center">
+        <DollarSign className="mr-2" />
+        USD Jewelry Estimate
+      </h1>
       
-      {/* Header Section */}
+      {/* Header Section - Customer & Date Info */}
       <div className="bg-white rounded shadow p-3 mb-4">
         <h2 className="text-base font-semibold mb-2 flex items-center">
-          <Calendar className="mr-2" size={16} />
-          Basic Information & Rates
+          <User className="mr-2" size={16} />
+          Customer Information & Estimate Details
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-2">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-3 mb-2">
           <div>
             <label className="block text-xs font-medium mb-1">Date</label>
             <input 
               type="date" 
               value={date} 
-              onChange={handleDateChange} 
+              onChange={(e) => setDate(e.target.value)} 
               className="w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" 
             />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1">Gold Rate</label>
+            <label className="block text-xs font-medium mb-1">Valid Until</label>
+            <input 
+              type="date" 
+              value={validUntil} 
+              onChange={(e) => setValidUntil(e.target.value)} 
+              className="w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" 
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Customer Name *</label>
+            <input 
+              type="text" 
+              value={customerName} 
+              onChange={e => setCustomerName(e.target.value)} 
+              className="w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" 
+              placeholder="Enter customer name"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Phone Number</label>
+            <input 
+              type="text" 
+              value={customerPhone} 
+              onChange={e => setCustomerPhone(e.target.value)} 
+              className="w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" 
+              placeholder="Enter phone number"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Email</label>
+            <input 
+              type="email" 
+              value={customerEmail} 
+              onChange={e => setCustomerEmail(e.target.value)} 
+              className="w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" 
+              placeholder="Enter email"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Gold Rate (INR)</label>
             <input 
               type="number" 
               value={goldRate} 
@@ -341,34 +420,14 @@ const IndianBilling = () => {
               className="w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" 
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium mb-1">Customer Name</label>
-            <input 
-              type="text" 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
-              className="w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" 
-              placeholder="Enter customer name"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1">Phone Number</label>
-            <input 
-              type="text" 
-              value={phone} 
-              onChange={e => setPhone(e.target.value)} 
-              className="w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" 
-              placeholder="Enter phone number"
-            />
-          </div>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ height: '500px' }}>
-        {/* Left side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ height: '600px' }}>
+        {/* Left side - Jewelry Details */}
         <div className="flex flex-col gap-4 h-full">
-          <div className="bg-white rounded shadow p-3 flex flex-col justify-start" style={{ height: '50%' }}>
+          <div className="bg-white rounded shadow p-3 flex flex-col justify-start" style={{ height: '40%' }}>
             <h2 className="text-base font-semibold mb-2 flex items-center">
               <Gem className="mr-2" size={16} />
               Jewelry & Gold Calculation
@@ -388,6 +447,14 @@ const IndianBilling = () => {
                 }}
                 className="border rounded px-2 py-1 text-xs w-28"
                 placeholder="Item Code"
+              />
+              <label className="text-xs font-medium w-24 ml-4">Jewelry Name</label>
+              <input
+                type="text"
+                value={jewelryName}
+                onChange={e => setJewelryName(e.target.value)}
+                className="border rounded px-2 py-1 text-xs flex-1"
+                placeholder="Jewelry Name"
               />
             </div>
             <div className="grid grid-cols-2 gap-2 mb-2">
@@ -447,15 +514,43 @@ const IndianBilling = () => {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded shadow p-3 flex flex-col justify-start" style={{ height: '50%' }}>
+          
+          <div className="bg-white rounded shadow p-3 flex flex-col justify-start" style={{ height: '60%' }}>
             <h2 className="text-base font-semibold mb-2">Stone Details</h2>
-            <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
+            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
               <StoneSection onStoneTotalChange={setStoneTotal} initialStones={fetchedStones} />
             </div>
             
-            {/* Print and Clear buttons moved inside Stone Details section */}
+            {/* Notes Section */}
+            <div className="mt-4 pt-4 border-t">
+              <label className="block text-sm font-medium mb-2">Notes</label>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="2"
+                placeholder="Add any special notes or requirements..."
+              />
+            </div>
+            
+            {/* Action buttons */}
             <div className="flex gap-4 mt-4 pt-4 border-t">
-              <button className="bg-blue-500 text-white px-6 py-3 rounded shadow hover:bg-blue-600 font-medium" onClick={() => window.print()}>
+              <button 
+                className="bg-green-500 text-white px-6 py-3 rounded shadow hover:bg-green-600 font-medium flex items-center"
+                onClick={saveEstimate}
+                disabled={!customerName || saveStatus === 'saving'}
+              >
+                {saveStatus === 'saving' ? (
+                  <>Saving...</>
+                ) : (
+                  <>
+                    <Save className="mr-2" size={16} />
+                    Save Estimate
+                  </>
+                )}
+              </button>
+              <button className="bg-blue-500 text-white px-6 py-3 rounded shadow hover:bg-blue-600 font-medium flex items-center" onClick={() => window.print()}>
+                <FileText className="mr-2" size={16} />
                 Print
               </button>
               <button
@@ -465,19 +560,31 @@ const IndianBilling = () => {
                 Clear
               </button>
             </div>
+            
+            {/* Save Status */}
+            {saveStatus && (
+              <div className={`mt-2 p-2 rounded text-sm ${
+                saveStatus === 'saved' ? 'bg-green-100 text-green-800' :
+                saveStatus === 'error' ? 'bg-red-100 text-red-800' :
+                'bg-blue-100 text-blue-800'
+              }`}>
+                {saveStatus === 'saved' && 'Estimate saved successfully!'}
+                {saveStatus === 'error' && 'Error saving estimate. Please try again.'}
+                {saveStatus === 'saving' && 'Saving estimate...'}
+              </div>
+            )}
           </div>
         </div>
         
         {/* Right: Totals & Taxes */}
         <div className="bg-white rounded shadow p-3 flex flex-col justify-start h-full">
-          <h2 className="text-base font-semibold mb-2">Totals & Taxes</h2>
-          <TotalSection 
+          <h2 className="text-base font-semibold mb-2">Totals & Taxes (USD)</h2>
+          <USDEstimateTotalSection 
             totalGoldAmount={totalGoldAmount} 
             stoneTotal={stoneTotal}
+            dollarRate={dollarRate}
             diamondCarats={diamondCarats}
             certificationRequired={certificationRequired}
-            setCertificationRequired={setCertificationRequired}
-            setDiamondCarats={setDiamondCarats}
             categoryInfo={categoryInfo}
           />
         </div>
@@ -486,11 +593,10 @@ const IndianBilling = () => {
   );
 };
 
-// Stone Section Component
+// Stone Section Component (same as billing)
 function StoneSection({ onStoneTotalChange, initialStones = [] }) {
   const [stones, setStones] = useState([]);
 
-  // Accept initial stones from parent
   useEffect(() => {
     if (Array.isArray(initialStones) && initialStones.length > 0) {
       setStones(initialStones.map((stone, idx) => {
@@ -505,7 +611,6 @@ function StoneSection({ onStoneTotalChange, initialStones = [] }) {
         };
       }));
     } else {
-      // Clear stones when initialStones is empty
       setStones([]);
     }
   }, [initialStones]);
@@ -577,16 +682,16 @@ function StoneSection({ onStoneTotalChange, initialStones = [] }) {
   );
 }
 
-// Total Section Component
-// Total Section Component - Modified for Indian Billing with Certification Charges
-function TotalSection({ totalGoldAmount, stoneTotal, diamondCarats: propDiamondCarats, certificationRequired: propCertificationRequired, setCertificationRequired, setDiamondCarats, categoryInfo }) {
-  const [certChargePerCarat, setCertChargePerCarat] = useState(0); // Will be set from category
-  const [gst, setGst] = useState(3);
+// Total Section Component for USD Estimates (similar to USBilling)
+function USDEstimateTotalSection({ totalGoldAmount, stoneTotal, dollarRate, diamondCarats, certificationRequired, categoryInfo }) {
+  const [certChargePerCarat, setCertChargePerCarat] = useState(0);
+  const [totalTaxPercent, setTotalTaxPercent] = useState(13.75);
   const [taxTotal, setTaxTotal] = useState('0.00');
   const [grandTotal, setGrandTotal] = useState('0.00');
-  const [certificationRequired, setCertificationRequiredLocal] = useState(propCertificationRequired || false);
-  const [diamondCarats, setDiamondCaratsLocal] = useState(propDiamondCarats || 0);
+  const [grandTotalUSD, setGrandTotalUSD] = useState('0.00');
   const [calculatedCertCharges, setCalculatedCertCharges] = useState(0);
+
+  // Session-based authentication
 
   // Update certification charge per carat when category changes
   useEffect(() => {
@@ -597,37 +702,15 @@ function TotalSection({ totalGoldAmount, stoneTotal, diamondCarats: propDiamondC
     }
   }, [categoryInfo]);
 
-  // Sync with parent props
-  useEffect(() => {
-    setCertificationRequiredLocal(propCertificationRequired || false);
-  }, [propCertificationRequired]);
-
-  useEffect(() => {
-    setDiamondCaratsLocal(propDiamondCarats || 0);
-  }, [propDiamondCarats]);
-
-  // Update parent when local state changes
-  const handleCertificationChange = (value) => {
-    setCertificationRequiredLocal(value);
-    if (setCertificationRequired) {
-      setCertificationRequired(value);
-    }
-  };
-
-  const handleDiamondCaratsChange = (value) => {
-    setDiamondCaratsLocal(value);
-    if (setDiamondCarats) {
-      setDiamondCarats(value);
-    }
-  };
-
   // Fetch tax rates on mount
   useEffect(() => {
     fetch('/api/rates/tax/latest', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.rate && data.rate.gst_percentage) {
-          setGst(data.rate.gst_percentage);
+        if (data.success && data.rate) {
+          const customsDuty = parseFloat(data.rate.customs_duty) || 0;
+          const stateTax = parseFloat(data.rate.state_tax) || 0;
+          setTotalTaxPercent(customsDuty + stateTax);
         }
       })
       .catch(() => {
@@ -640,24 +723,37 @@ function TotalSection({ totalGoldAmount, stoneTotal, diamondCarats: propDiamondC
     const goldAmt = parseFloat(totalGoldAmount || 0);
     const stoneAmt = parseFloat(stoneTotal || 0);
     
-    // Calculate certification charges based on diamond carats if certification is required
     let certAmt = 0;
     if (certificationRequired && diamondCarats > 0) {
       certAmt = diamondCarats * parseFloat(certChargePerCarat || 0);
     }
     setCalculatedCertCharges(certAmt);
     
-    const jewelValue = goldAmt + stoneAmt + certAmt;
+    const jewelValueINR = goldAmt + stoneAmt + certAmt;
     
-    // Calculate GST
-    const gstAmount = (jewelValue * (parseFloat(gst) || 0)) / 100;
-    setTaxTotal(gstAmount.toFixed(2));
-    setGrandTotal((jewelValue + gstAmount).toFixed(2));
-  }, [totalGoldAmount, stoneTotal, certChargePerCarat, gst, certificationRequired, diamondCarats]);
+    // Convert to USD first
+    let jewelValueUSD = 0;
+    if (dollarRate && parseFloat(dollarRate) > 0) {
+      jewelValueUSD = jewelValueINR / parseFloat(dollarRate);
+    }
+    
+    // Calculate tax on USD value
+    const taxAmountUSD = (jewelValueUSD * (parseFloat(totalTaxPercent) || 0)) / 100;
+    
+    // Convert tax back to INR for display
+    const taxAmountINR = taxAmountUSD * parseFloat(dollarRate || 1);
+    setTaxTotal(taxAmountINR.toFixed(2));
+    
+    const grandTotalINR = jewelValueINR + taxAmountINR;
+    setGrandTotal(grandTotalINR.toFixed(2));
+    
+    const grandTotalInUSD = jewelValueUSD + taxAmountUSD;
+    setGrandTotalUSD(grandTotalInUSD.toFixed(2));
+  }, [totalGoldAmount, stoneTotal, certChargePerCarat, totalTaxPercent, dollarRate, certificationRequired, diamondCarats]);
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label className="block text-sm font-medium mb-2">Total Gold Amount</label>
           <input 
@@ -676,15 +772,6 @@ function TotalSection({ totalGoldAmount, stoneTotal, diamondCarats: propDiamondC
             className="w-full border rounded-md px-3 py-2 bg-gray-100 font-medium"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-2">Certification Charges</label>
-          <input 
-            type="text" 
-            value={`₹${calculatedCertCharges.toFixed(2)}`}
-            readOnly 
-            className="w-full border rounded-md px-3 py-2 bg-gray-100 font-medium"
-          />
-        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -694,26 +781,22 @@ function TotalSection({ totalGoldAmount, stoneTotal, diamondCarats: propDiamondC
             value={certChargePerCarat} 
             readOnly
             className="w-full border rounded-md px-3 py-2 bg-gray-100 font-medium"
-            placeholder="700.00"
           />
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-2">GST (%)</label>
+          <label className="block text-sm font-medium mb-2">Total Tax %</label>
           <input 
             type="number" 
-            value={gst || ''} 
-            onChange={e => setGst(e.target.value)}
+            value={totalTaxPercent || ''} 
+            onChange={e => setTotalTaxPercent(e.target.value)}
             className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="3.00"
           />
         </div>
       </div>
       <div className="border-t pt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Total Taxes</label>
+            <label className="block text-sm font-medium mb-2">Total Taxes (INR)</label>
             <input 
               type="text" 
               value={`₹${taxTotal}`} 
@@ -722,18 +805,27 @@ function TotalSection({ totalGoldAmount, stoneTotal, diamondCarats: propDiamondC
             />
           </div>
           <div>
-            <label className="block text-lg font-bold mb-2 text-green-700">Grand Total (₹)</label>
+            <label className="block text-sm font-medium mb-2">Grand Total (INR)</label>
             <input 
               type="text" 
               value={`₹${grandTotal}`} 
               readOnly 
-              className="w-full border-2 border-green-500 rounded-md px-3 py-3 bg-green-50 font-bold text-lg text-green-800"
+              className="w-full border rounded-md px-3 py-3 bg-blue-50 font-medium text-lg"
             />
           </div>
         </div>
+        <div className="mt-4">
+          <label className="block text-lg font-bold mb-2 text-green-700">Grand Total (USD)</label>
+          <input 
+            type="text" 
+            value={`$${grandTotalUSD}`} 
+            readOnly 
+            className="w-full border-2 border-green-500 rounded-md px-3 py-3 bg-green-50 font-bold text-xl text-green-800"
+          />
+        </div>
       </div>
       <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h3 className="font-bold mb-2">Summary</h3>
+        <h3 className="font-bold mb-2">Estimate Summary</h3>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
             <span>Gold Amount:</span>
@@ -752,12 +844,16 @@ function TotalSection({ totalGoldAmount, stoneTotal, diamondCarats: propDiamondC
             <span>₹{(parseFloat(totalGoldAmount || 0) + parseFloat(stoneTotal || 0) + calculatedCertCharges).toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Total Taxes (GST {gst}%):</span>
+            <span>Total Taxes:</span>
             <span>₹{taxTotal}</span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t pt-1">
-            <span>Grand Total:</span>
-            <span className="text-green-600">₹{grandTotal}</span>
+            <span>Grand Total (INR):</span>
+            <span className="text-blue-600">₹{grandTotal}</span>
+          </div>
+          <div className="flex justify-between font-bold text-xl border-t pt-1">
+            <span>Grand Total (USD):</span>
+            <span className="text-green-600">${grandTotalUSD}</span>
           </div>
         </div>
       </div>
@@ -765,4 +861,4 @@ function TotalSection({ totalGoldAmount, stoneTotal, diamondCarats: propDiamondC
   );
 }
 
-export default IndianBilling;
+export default USDEstimate;

@@ -76,19 +76,19 @@ const ManualRateEntry = () => {
   const loadCurrentRates = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      
       
       // Fetch gold rates
       const goldResponse = await fetch('/api/rates/gold/today', {
-        headers: {
-          'Authorization': `Bearer ${token}`
+        credentials: 'include', headers: {
+          
         }
       });
       
       // Fetch dollar rates
       const dollarResponse = await fetch('/api/rates/dollar/today', {
-        headers: {
-          'Authorization': `Bearer ${token}`
+        credentials: 'include', headers: {
+          
         }
       });
       
@@ -116,8 +116,8 @@ const ManualRateEntry = () => {
       
       // Fetch tax rates from API
       const taxResponse = await fetch('/api/rates/tax/latest', {
-        headers: {
-          'Authorization': `Bearer ${token}`
+        credentials: 'include', headers: {
+          
         }
       });
       if (taxResponse.ok) {
@@ -149,13 +149,13 @@ const ManualRateEntry = () => {
     setError('');
     
     try {
-      const token = localStorage.getItem('token');
+      
       // Save rates as per gram (multiply by 10 for database storage which expects per 10g)
       const response = await fetch('/api/rates/gold/manual', {
         method: 'POST',
-        headers: {
+        credentials: 'include', headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          
         },
         body: JSON.stringify({
           gold_24k_per_10g: parseFloat(goldRates.gold_24k_per_gram),
@@ -202,12 +202,12 @@ const ManualRateEntry = () => {
     setError('');
     
     try {
-      const token = localStorage.getItem('token');
+      
       const response = await fetch('/api/rates/dollar/manual', {
         method: 'POST',
-        headers: {
+        credentials: 'include', headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          
         },
         body: JSON.stringify({
           usd_to_inr: parseFloat(dollarRate.usd_to_inr),
@@ -242,12 +242,12 @@ const ManualRateEntry = () => {
     setIsSaving(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      
       const response = await fetch('/api/rates/tax/manual', {
         method: 'POST',
-        headers: {
+        credentials: 'include', headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          
         },
         body: JSON.stringify({
           gst_percentage: taxRate.gst_percentage ? parseFloat(taxRate.gst_percentage) : null,

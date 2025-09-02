@@ -54,12 +54,12 @@ const RoleSwitcher = () => {
   ];
 
   const switchRole = (roleData) => {
-    localStorage.setItem('token', roleData.token);
+  // Update auth context
     setAuthData({
       id: roleData.id,
       role: roleData.role,
       username: roleData.username
-    }, roleData.token);
+    });
     
     // Reload to apply changes
     window.location.reload();

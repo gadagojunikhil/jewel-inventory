@@ -72,6 +72,16 @@ export const SCREEN_IDS = {
     CUSTOMER_SELECTION: 'BILL-005'
   },
 
+  // Estimates
+  ESTIMATES: {
+    INR_ESTIMATE: 'EST-001',
+    USD_ESTIMATE: 'EST-002',
+    VIEW_ESTIMATES: 'EST-003',
+    EDIT_ESTIMATE: 'EST-004',
+    ESTIMATE_DETAILS_MODAL: 'EST-003M1',
+    CONVERT_TO_SALE_MODAL: 'EST-003M2'
+  },
+
   // Reports & Analytics
   REPORTS: {
     INVENTORY_REPORT: 'REP-001',

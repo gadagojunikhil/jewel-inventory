@@ -49,7 +49,7 @@ const CategoryManagement = () => {
         const token = 'YOUR_AUTH_TOKEN'; // Replace with context or prop for token
         const response = await fetch('/api/categories', {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer `,
             'Content-Type': 'application/json',
           },
         });

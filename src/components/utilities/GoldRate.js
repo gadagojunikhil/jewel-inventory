@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Gem, RefreshCw, TrendingUp, TrendingDown, Calendar, AlertCircle, CheckCircle, Globe, Clock, Database, History } from 'lucide-react';
+import { Gem, RefreshCw, TrendingUp, TrendingDown, AlertCircle, Globe, Clock, Database, History, CheckCircle } from 'lucide-react';
 import PageIdentifier from '../shared/PageIdentifier';
 import SCREEN_IDS from '../../utils/screenIds';
 
@@ -17,7 +17,7 @@ const GoldRate = () => {
   useEffect(() => {
     loadTodaysRate();
     loadHistoricalRates();
-    loadSettings();
+    setAutoFetch(false); // Default setting
     calculateNextFetchTime();
   }, []);
 
@@ -25,9 +25,7 @@ const GoldRate = () => {
   const loadTodaysRate = async () => {
     try {
       const response = await fetch('/api/rates/gold/today', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -46,13 +44,9 @@ const GoldRate = () => {
   const loadHistoricalRates = async () => {
     setIsFetchingHistory(true);
     try {
-      const response = await fetch('/api/rates/gold/history?limit=30', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
+    const response = await fetch('/api/rates/gold/live', {
+      credentials: 'include'
+    });      if (response.ok) {
         const data = await response.json();
         if (data.success) {
           setHistoricalRates(data.rates || []);
@@ -65,11 +59,10 @@ const GoldRate = () => {
     }
   };
 
-  // Load settings from localStorage
-  const loadSettings = () => {
-    const savedAutoFetch = localStorage.getItem('goldRateAutoFetch') === 'true';
-    setAutoFetch(savedAutoFetch);
-  };
+  // Load settings from database (future enhancement)
+  useEffect(() => {
+    setAutoFetch(false); // Default to false, load from user preferences later
+  }, []);
 
   // Calculate next fetch time (8:00 AM EST daily)
   const calculateNextFetchTime = () => {
@@ -103,9 +96,9 @@ const GoldRate = () => {
       const response = await fetch('/api/rates/gold/fetch', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
 
       const data = await response.json();
@@ -132,7 +125,8 @@ const GoldRate = () => {
   // Handle auto-fetch setting change
   const handleAutoFetchChange = (checked) => {
     setAutoFetch(checked);
-    localStorage.setItem('goldRateAutoFetch', checked.toString());
+    // TODO: Save to user preferences in database
+    // For now, setting is only active during session
   };
 
   // Format currency

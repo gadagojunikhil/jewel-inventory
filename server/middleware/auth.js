@@ -2,30 +2,20 @@ const jwt = require('jsonwebtoken');
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'Access token required' });
+    // Check if user is logged in via session
+    if (!req.session || !req.session.user) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
     
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-      req.userId = decoded.userId;
-      req.userRole = decoded.role;
-      req.username = decoded.username;
-      req.fullName = decoded.fullName;
-      req.user = {
-        id: decoded.userId,
-        role: decoded.role,
-        username: decoded.username,
-        fullName: decoded.fullName
-      };
-      
-      next();
-    } catch (jwtError) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
+    // Set user data from session
+    const user = req.session.user;
+    req.userId = user.id;
+    req.userRole = user.role;
+    req.username = user.username;
+    req.fullName = user.fullName;
+    req.user = user;
     
+    next();
   } catch (error) {
     console.error('Auth middleware error:', error);
     res.status(401).json({ error: 'Authentication failed' });

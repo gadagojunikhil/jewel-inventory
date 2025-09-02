@@ -45,20 +45,17 @@ const VendorManagement = () => {
         
         console.log('Starting vendor fetch...');
         
-        // Get auth token
-        let token = localStorage.getItem('token');
-        if (!token) {
-          token = 'dummy-token';
-          localStorage.setItem('token', token);
-        }
+        // Get auth 
         
-        console.log('Token:', token);
+        
+        console.log('Token:', );
         console.log('Fetching from:', '/api/vendors');
 
         const response = await fetch('/api/vendors', {
-          headers: {
+          credentials: 'include',
+        headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            
           }
         });
         
@@ -104,9 +101,10 @@ const VendorManagement = () => {
       
       const response = await fetch('/api/vendors', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          
         },
         body: JSON.stringify(vendorData)
       });
@@ -152,11 +150,7 @@ const VendorManagement = () => {
     }
 
     try {
-      let token = localStorage.getItem('token');
-      if (!token) {
-        token = 'dummy-token';
-        localStorage.setItem('token', token);
-      }
+      
 
       // Send name to both name and company fields since they represent the same thing
       const vendorData = {
@@ -166,9 +160,10 @@ const VendorManagement = () => {
 
       const response = await fetch(`/api/vendors/${editingVendor.id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          
         },
         body: JSON.stringify(vendorData)
       });
@@ -193,17 +188,14 @@ const VendorManagement = () => {
     }
 
     try {
-      let token = localStorage.getItem('token');
-      if (!token) {
-        token = 'dummy-token';
-        localStorage.setItem('token', token);
-      }
+      
 
       const response = await fetch(`/api/vendors/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          
         }
       });
 

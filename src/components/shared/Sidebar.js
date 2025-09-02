@@ -48,6 +48,15 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
       ].filter(item => hasAccess(item.id))
     },
     {
+      id: 'estimates',
+      title: 'Estimates',
+      submenu: [
+        { id: 'inr-estimate', title: 'INR Estimate', icon: Calculator },
+        { id: 'usd-estimate', title: 'USD Estimate', icon: Calculator },
+        { id: 'view-estimates', title: 'View Estimates', icon: Eye }
+      ].filter(item => hasAccess(item.id))
+    },
+    {
       id: 'report',
       title: 'Report',
       submenu: [
@@ -61,8 +70,7 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
       submenu: [
         { id: 'gold-rate', title: 'Gold Rate', icon: Gem },
         { id: 'dollar-rate', title: 'Dollar Rate', icon: DollarSign },
-        { id: 'manual-rate-entry', title: 'Manual Rate Entry', icon: Calculator },
-        { id: 'data-sync', title: 'Data Sync', icon: Settings }
+        { id: 'manual-rate-entry', title: 'Manual Rate Entry', icon: Calculator }
       ].filter(item => hasAccess(item.id))
     }
   ].filter(section => section.submenu.length > 0); // Remove empty sections
@@ -104,6 +112,7 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
                   {item.id === 'admin' && <Settings size={20} />}
                   {item.id === 'inventory' && <Package size={20} />}
                   {item.id === 'billing' && <FileText size={20} />}
+                  {item.id === 'estimates' && <Calculator size={20} />}
                   {item.id === 'report' && <BarChart3 size={20} />}
                   {item.id === 'utilities' && <Calculator size={20} />}
                   <span>{item.title}</span>

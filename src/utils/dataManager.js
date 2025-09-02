@@ -1,5 +1,5 @@
-// Enhanced storage utility with automatic sync capabilities
-import { storageUtils } from './simpleStorage';
+// Database-first data manager
+import { apiService } from '../services/api';
 
 class DataManager {
   constructor() {
@@ -11,11 +11,12 @@ class DataManager {
   setupNetworkListeners() {
     window.addEventListener('online', () => {
       this.isOnline = true;
-      this.autoSync();
+      this.notifyConnectionChange(true);
     });
     
     window.addEventListener('offline', () => {
       this.isOnline = false;
+      this.notifyConnectionChange(false);
     });
   }
 
@@ -43,36 +44,71 @@ class DataManager {
     }
   }
 
-  // Load data with automatic fallback
+  // Notify listeners of connection changes
+  notifyConnectionChange(isOnline) {
+    const callbacks = this.listeners.get('connection');
+    if (callbacks) {
+      callbacks.forEach(callback => callback({ isOnline }));
+    }
+  }
+
+  // Load data directly from database via API
   async loadData(key, fallbackData = []) {
     try {
-      // For now, let's just use localStorage to avoid API issues
-      // We can enable API sync later when backend is fully configured
-      const localData = this.getLocal(key, fallbackData);
-      return localData;
+      if (!this.isOnline) {
+        console.warn(`No internet connection - cannot load ${key}`);
+        return fallbackData;
+      }
+
+      const apiMethods = {
+        'jewelryMaterials': () => apiService.getMaterials(),
+        'jewelryCategories': () => apiService.getCategories(),
+        'jewelryPieces': () => apiService.getJewelryPieces(),
+        'jewelryUsers': () => apiService.getUsers(),
+        'estimates': () => apiService.getEstimates()
+      };
+
+      const method = apiMethods[key];
+      if (method) {
+        const data = await method();
+        return Array.isArray(data) ? data : fallbackData;
+      }
+
+      return fallbackData;
     } catch (error) {
       console.error(`Error loading ${key}:`, error);
       return fallbackData;
     }
   }
 
-  // Save data with automatic sync
-  async saveData(key, data, syncToBackend = false) {
+  // Save data directly to database via API
+  async saveData(key, data) {
     try {
-      // Save to localStorage immediately
-      this.saveLocal(key, data);
-      
-      // Notify all subscribers
+      if (!this.isOnline) {
+        throw new Error('No internet connection - cannot save data');
+      }
+
+      // Notify all subscribers immediately with optimistic update
       this.notify(key, data);
 
-      // For now, disable backend sync to avoid issues
-      // We can enable this later when backend is fully configured
-      if (syncToBackend && this.isOnline) {
-        try {
-          await this.saveToAPI(key, data);
-        } catch (error) {
-          console.log(`Failed to sync ${key} to backend:`, error);
-        }
+      const apiMethods = {
+        'jewelryMaterials': (items) => Promise.all(items.map(item => 
+          item.id ? apiService.updateMaterial(item.id, item) : apiService.createMaterial(item)
+        )),
+        'jewelryCategories': (items) => Promise.all(items.map(item => 
+          item.id ? apiService.updateCategory(item.id, item) : apiService.createCategory(item)
+        )),
+        'jewelryPieces': (items) => Promise.all(items.map(item => 
+          item.id ? apiService.updateJewelryPiece(item.id, item) : apiService.createJewelryPiece(item)
+        )),
+        'estimates': (items) => Promise.all(items.map(item => 
+          item.id ? apiService.updateEstimate(item.id, item) : apiService.createEstimate(item)
+        ))
+      };
+
+      const method = apiMethods[key];
+      if (method && Array.isArray(data)) {
+        await method(data);
       }
 
       return data;
@@ -80,87 +116,6 @@ class DataManager {
       console.error(`Error saving ${key}:`, error);
       throw error;
     }
-  }
-
-  // Local storage operations
-  getLocal(key, defaultValue = []) {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
-      console.error(`Error reading ${key} from localStorage:`, error);
-      return defaultValue;
-    }
-  }
-
-  saveLocal(key, data) {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-    } catch (error) {
-      console.error(`Error saving ${key} to localStorage:`, error);
-    }
-  }
-
-  // API operations
-  async fetchFromAPI(key) {
-    const endpoints = {
-      'jewelryMaterials': '/api/materials',
-      'jewelryCategories': '/api/categories', 
-      'jewelryPieces': '/api/jewelry',
-      'jewelryUsers': '/api/users'
-    };
-
-    const endpoint = endpoints[key];
-    if (!endpoint) return null;
-
-    const response = await fetch(endpoint);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
-  }
-
-  async saveToAPI(key, data) {
-    const endpoints = {
-      'jewelryMaterials': '/api/materials',
-      'jewelryCategories': '/api/categories',
-      'jewelryPieces': '/api/jewelry', 
-      'jewelryUsers': '/api/users'
-    };
-
-    const endpoint = endpoints[key];
-    if (!endpoint) return false;
-
-    const response = await fetch(`${endpoint}/bulk-sync`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ data })
-    });
-
-    return response.ok;
-  }
-
-  // Queue management for offline sync
-  queueForSync(key, data) {
-    const queue = this.getLocal('syncQueue', {});
-    queue[key] = { data, timestamp: Date.now() };
-    this.saveLocal('syncQueue', queue);
-  }
-
-  async autoSync() {
-    const queue = this.getLocal('syncQueue', {});
-    
-    for (const [key, item] of Object.entries(queue)) {
-      try {
-        await this.saveToAPI(key, item.data);
-        console.log(`Auto-synced ${key} to backend`);
-      } catch (error) {
-        console.log(`Failed to auto-sync ${key}:`, error);
-      }
-    }
-
-    // Clear successful syncs
-    this.saveLocal('syncQueue', {});
   }
 
   // Utility methods for specific data types
@@ -194,6 +149,14 @@ class DataManager {
 
   async saveUsers(users) {
     return this.saveData('jewelryUsers', users);
+  }
+
+  async getEstimates() {
+    return this.loadData('estimates', []);
+  }
+
+  async saveEstimates(estimates) {
+    return this.saveData('estimates', estimates);
   }
 }
 

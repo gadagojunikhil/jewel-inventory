@@ -2,205 +2,177 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
+  // Session-based authentication
+  // This could be implemented with secure httpOnly cookies or session management
   return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    'Content-Type': 'application/json'
+    // Authorization header will be handled by the server session or other secure method
   };
+};
+
+// Helper function to handle API responses
+const handleResponse = async (response) => {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Network error' }));
+    throw new Error(error.error || error.message || 'API request failed');
+  }
+  
+  const data = await response.json();
+  
+  // Handle new API response format
+  if (data.success !== undefined) {
+    if (!data.success) {
+      throw new Error(data.error || 'API request failed');
+    }
+    return data.data || data;
+  }
+  
+  // Handle legacy format
+  return data;
+};
+
+// Helper function for API calls
+const apiCall = async (url, options = {}) => {
+  const config = {
+    headers: getAuthHeaders(),
+    credentials: 'include', // Include cookies for session management
+    ...options
+  };
+  
+  if (config.body && typeof config.body === 'object') {
+    config.body = JSON.stringify(config.body);
+  }
+  
+  const response = await fetch(`${API_BASE_URL}${url}`, config);
+  return handleResponse(response);
 };
 
 const api = {
   // Vendors
   getVendors: async () => {
-    const response = await fetch(`${API_BASE_URL}/vendors`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch vendors');
-    return response.json();
+    return apiCall('/vendors');
   },
 
   createVendor: async (data) => {
-    const response = await fetch(`${API_BASE_URL}/vendors`, {
+    return apiCall('/vendors', {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to add vendor');
-    return response.json();
   },
 
   updateVendor: async (id, data) => {
-    const response = await fetch(`${API_BASE_URL}/vendors/${id}`, {
+    return apiCall(`/vendors/${id}`, {
       method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to update vendor');
-    return response.json();
   },
 
   deleteVendor: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/vendors/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
+    return apiCall(`/vendors/${id}`, {
+      method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Failed to delete vendor');
-    return response.json();
   },
 
   // Materials
   getMaterials: async () => {
-    const response = await fetch(`${API_BASE_URL}/materials`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch materials');
-    return response.json();
+    return apiCall('/materials');
   },
   
   createMaterial: async (data) => {
-    const response = await fetch(`${API_BASE_URL}/materials`, {
+    return apiCall('/materials', {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to create material');
-    return response.json();
   },
   
   updateMaterial: async (id, data) => {
-    const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
+    return apiCall(`/materials/${id}`, {
       method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to update material');
-    return response.json();
   },
   
   deleteMaterial: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
+    return apiCall(`/materials/${id}`, {
+      method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Failed to delete material');
-    return response.json();
   },
 
   // Jewelry
-  getJewelry: async () => {
-    const response = await fetch(`${API_BASE_URL}/jewelry`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch jewelry');
-    return response.json();
+  getJewelry: async (params = {}) => {
+    const searchParams = new URLSearchParams(params);
+    return apiCall(`/jewelry?${searchParams.toString()}`);
   },
 
   createJewelry: async (data) => {
-    const response = await fetch(`${API_BASE_URL}/jewelry`, {
+    return apiCall('/jewelry', {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to create jewelry');
-    return response.json();
   },
 
   updateJewelry: async (id, data) => {
-    const response = await fetch(`${API_BASE_URL}/jewelry/${id}`, {
+    return apiCall(`/jewelry/${id}`, {
       method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to update jewelry');
-    return response.json();
   },
 
   deleteJewelry: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/jewelry/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
+    return apiCall(`/jewelry/${id}`, {
+      method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Failed to delete jewelry');
-    return response.json();
   },
 
   // Categories
   getCategories: async () => {
-    const response = await fetch(`${API_BASE_URL}/categories`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch categories');
-    return response.json();
+    return apiCall('/categories');
   },
 
   createCategory: async (data) => {
-    const response = await fetch(`${API_BASE_URL}/categories`, {
+    return apiCall('/categories', {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to create category');
-    return response.json();
   },
 
   updateCategory: async (id, data) => {
-    const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+    return apiCall(`/categories/${id}`, {
       method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to update category');
-    return response.json();
   },
 
   deleteCategory: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
+    return apiCall(`/categories/${id}`, {
+      method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Failed to delete category');
-    return response.json();
   },
 
   // Users
-  getUsers: async () => {
-    const response = await fetch(`${API_BASE_URL}/users`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch users');
-    return response.json();
+  getUsers: async (params = {}) => {
+    const searchParams = new URLSearchParams(params);
+    return apiCall(`/users?${searchParams.toString()}`);
   },
 
   createUser: async (data) => {
-    const response = await fetch(`${API_BASE_URL}/users`, {
+    return apiCall('/users', {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to create user');
-    return response.json();
   },
 
   updateUser: async (id, data) => {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+    return apiCall(`/users/${id}`, {
       method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: data
     });
-    if (!response.ok) throw new Error('Failed to update user');
-    return response.json();
   },
 
   deleteUser: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
+    return apiCall(`/users/${id}`, {
+      method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Failed to delete user');
-    return response.json();
   },
 
   // Authentication
@@ -210,278 +182,259 @@ const api = {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include', // Include cookies for session management
       body: JSON.stringify({ username, password })
     });
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
-    }
-    
-    const data = await response.json();
-    return data;
+    return handleResponse(response);
   },
 
   getCurrentUser: async () => {
     const response = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: getAuthHeaders()
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include' // Include cookies for session management
     });
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to get user info');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
 
   changePassword: async (currentPassword, newPassword) => {
     const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
       method: 'PUT',
-      headers: getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include', // Include cookies for session management
       body: JSON.stringify({ currentPassword, newPassword })
     });
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to change password');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
 
-  logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  logout: async () => {
+    try {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    // Clear any client-side state if needed
+  },
+
+  // Estimates
+  getEstimates: async (params = {}) => {
+    const searchParams = new URLSearchParams(params);
+    return apiCall(`/estimates?${searchParams.toString()}`);
+  },
+
+  createEstimate: async (data) => {
+    return apiCall('/estimates', {
+      method: 'POST',
+      body: data
+    });
+  },
+
+  updateEstimate: async (id, data) => {
+    return apiCall(`/estimates/${id}`, {
+      method: 'PUT',
+      body: data
+    });
+  },
+
+  deleteEstimate: async (id) => {
+    return apiCall(`/estimates/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // Statistics and Reports
+  getJewelryStatistics: async () => {
+    return apiCall('/jewelry/statistics');
+  },
+
+  getUserStatistics: async () => {
+    return apiCall('/users/statistics');
+  },
+
+  getInventoryValuation: async (params = {}) => {
+    const searchParams = new URLSearchParams(params);
+    return apiCall(`/jewelry/valuation?${searchParams.toString()}`);
+  },
+
+  // Search functionality
+  searchJewelry: async (searchTerm, params = {}) => {
+    const searchParams = new URLSearchParams({ q: searchTerm, ...params });
+    return apiCall(`/jewelry/search?${searchParams.toString()}`);
+  },
+
+  searchUsers: async (searchTerm, params = {}) => {
+    const searchParams = new URLSearchParams({ q: searchTerm, ...params });
+    return apiCall(`/users/search?${searchParams.toString()}`);
+  },
+
+  // Pricing calculations
+  calculateJewelryPricing: async (pricingData) => {
+    return apiCall('/jewelry/calculate-pricing', {
+      method: 'POST',
+      body: pricingData
+    });
   }
 };
 
-// Create a more comprehensive API service for database operations
+// Enhanced API service with better error handling and consistency
 export const apiService = {
   // Vendors
-  async getVendors() {
-    const response = await fetch(`${API_BASE_URL}/vendors`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch vendors');
-    return response.json();
+  async getVendors(params = {}) {
+    return api.getVendors(params);
   },
 
   async createVendor(vendor) {
-    const response = await fetch(`${API_BASE_URL}/vendors`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(vendor),
-    });
-    if (!response.ok) throw new Error('Failed to create vendor');
-    return response.json();
+    return api.createVendor(vendor);
   },
 
   async updateVendor(id, vendor) {
-    const response = await fetch(`${API_BASE_URL}/vendors/${id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(vendor),
-    });
-    if (!response.ok) throw new Error('Failed to update vendor');
-    return response.json();
+    return api.updateVendor(id, vendor);
   },
 
   async deleteVendor(id) {
-    const response = await fetch(`${API_BASE_URL}/vendors/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to delete vendor');
-    return response.json();
-  },
-
-  async getVendorStats(id) {
-    const response = await fetch(`${API_BASE_URL}/vendors/${id}/stats`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch vendor statistics');
-    return response.json();
+    return api.deleteVendor(id);
   },
 
   // Materials
-  async getMaterials() {
-    const response = await fetch(`${API_BASE_URL}/materials`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch materials');
-    return response.json();
+  async getMaterials(params = {}) {
+    return api.getMaterials(params);
   },
 
   async createMaterial(material) {
-    const response = await fetch(`${API_BASE_URL}/materials`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(material),
-    });
-    if (!response.ok) throw new Error('Failed to create material');
-    return response.json();
+    return api.createMaterial(material);
   },
 
   async updateMaterial(id, material) {
-    const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(material),
-    });
-    if (!response.ok) throw new Error('Failed to update material');
-    return response.json();
+    return api.updateMaterial(id, material);
   },
 
   async deleteMaterial(id) {
-    const response = await fetch(`${API_BASE_URL}/materials/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to delete material');
-    return response.json();
+    return api.deleteMaterial(id);
   },
 
   // Categories
-  async getCategories() {
-    const response = await fetch(`${API_BASE_URL}/categories`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch categories');
-    return response.json();
+  async getCategories(params = {}) {
+    return api.getCategories(params);
   },
 
   async createCategory(category) {
-    const response = await fetch(`${API_BASE_URL}/categories`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(category),
-    });
-    if (!response.ok) throw new Error('Failed to create category');
-    return response.json();
+    return api.createCategory(category);
   },
 
   async updateCategory(id, category) {
-    const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(category),
-    });
-    if (!response.ok) throw new Error('Failed to update category');
-    return response.json();
+    return api.updateCategory(id, category);
   },
 
   async deleteCategory(id) {
-    const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to delete category');
-    return response.json();
+    return api.deleteCategory(id);
   },
 
   // Jewelry/Inventory
-  async getJewelryPieces() {
-    const response = await fetch(`${API_BASE_URL}/jewelry`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch jewelry pieces');
-    return response.json();
+  async getJewelryPieces(params = {}) {
+    return api.getJewelry(params);
   },
 
   async createJewelryPiece(piece) {
-    const response = await fetch(`${API_BASE_URL}/jewelry`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(piece),
-    });
-    if (!response.ok) throw new Error('Failed to create jewelry piece');
-    return response.json();
+    return api.createJewelry(piece);
   },
 
   async updateJewelryPiece(id, piece) {
-    const response = await fetch(`${API_BASE_URL}/jewelry/${id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(piece),
-    });
-    if (!response.ok) throw new Error('Failed to update jewelry piece');
-    return response.json();
+    return api.updateJewelry(id, piece);
   },
 
   async deleteJewelryPiece(id) {
-    const response = await fetch(`${API_BASE_URL}/jewelry/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to delete jewelry piece');
-    return response.json();
+    return api.deleteJewelry(id);
   },
 
   // Users
-  async getUsers() {
-    const response = await fetch(`${API_BASE_URL}/users`, {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch users');
-    return response.json();
+  async getUsers(params = {}) {
+    return api.getUsers(params);
   },
 
   async createUser(user) {
-    const response = await fetch(`${API_BASE_URL}/users`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(user),
-    });
-    if (!response.ok) throw new Error('Failed to create user');
-    return response.json();
+    return api.createUser(user);
   },
 
   async updateUser(id, user) {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(user),
-    });
-    if (!response.ok) throw new Error('Failed to update user');
-    return response.json();
+    return api.updateUser(id, user);
   },
 
   async deleteUser(id) {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to delete user');
-    return response.json();
+    return api.deleteUser(id);
+  },
+
+  // Estimates
+  async getEstimates(params = {}) {
+    return api.getEstimates(params);
+  },
+
+  async createEstimate(estimate) {
+    return api.createEstimate(estimate);
+  },
+
+  async updateEstimate(id, estimate) {
+    return api.updateEstimate(id, estimate);
+  },
+
+  async deleteEstimate(id) {
+    return api.deleteEstimate(id);
+  },
+
+  // Statistics
+  async getJewelryStatistics() {
+    return api.getJewelryStatistics();
+  },
+
+  async getUserStatistics() {
+    return api.getUserStatistics();
+  },
+
+  async getInventoryValuation(params = {}) {
+    return api.getInventoryValuation(params);
+  },
+
+  // Search
+  async searchJewelry(searchTerm, params = {}) {
+    return api.searchJewelry(searchTerm, params);
+  },
+
+  async searchUsers(searchTerm, params = {}) {
+    return api.searchUsers(searchTerm, params);
+  },
+
+  // Pricing
+  async calculateJewelryPricing(pricingData) {
+    return api.calculateJewelryPricing(pricingData);
   },
 
   // Permissions
   getCustomPermissions: async () => {
-    const response = await fetch('/api/permissions', {
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch custom permissions');
-    return response.json();
+    return apiCall('/permissions');
   },
 
   saveCustomPermissions: async (permissions) => {
-    const response = await fetch('/api/permissions', {
+    return apiCall('/permissions', {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ permissions }),
+      body: { permissions }
     });
-    if (!response.ok) throw new Error('Failed to save custom permissions');
-    return response.json();
   },
 
   resetPermissions: async () => {
-    const response = await fetch('/api/permissions', {
-      method: 'DELETE',
-      headers: getAuthHeaders()
+    return apiCall('/permissions', {
+      method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Failed to reset permissions');
-    return response.json();
   }
 };
 

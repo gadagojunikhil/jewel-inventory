@@ -16,15 +16,10 @@ const ItemDetails = ({ itemId, onBack }) => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
       
       const response = await fetch(`/api/inventory/${itemId}`, {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

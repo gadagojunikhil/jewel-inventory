@@ -15,7 +15,7 @@ const DollarRate = () => {
   const [autoFetch, setAutoFetch] = useState(false);
   const [nextFetchTime, setNextFetchTime] = useState('');
 
-  // Load saved data from database and localStorage on component mount
+  // Load saved data from database on component mount
   useEffect(() => {
     loadTodaysRate();
     loadHistoricalRates();
@@ -26,13 +26,8 @@ const DollarRate = () => {
   // Load today's exchange rate from database
   const loadTodaysRate = async () => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Token for dollar rate request:', token ? 'Token exists' : 'No token found');
-      
       const response = await fetch('/api/rates/dollar/today', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
 
       console.log('Dollar rate response status:', response.status);
@@ -69,9 +64,7 @@ const DollarRate = () => {
     setIsFetchingHistory(true);
     try {
       const response = await fetch('/api/rates/dollar/history?limit=30', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -87,17 +80,12 @@ const DollarRate = () => {
     }
   };
 
-  // Load settings from localStorage
+  // Load settings from session (defaults)
   const loadSettings = () => {
-    const savedCustomRate = localStorage.getItem('customDollarRate');
-    const useCustom = localStorage.getItem('useCustomDollarRate') === 'true';
-    const savedAutoFetch = localStorage.getItem('dollarRateAutoFetch') === 'true';
-
-    if (savedCustomRate) {
-      setCustomRate(savedCustomRate);
-    }
-    setUseCustomRate(useCustom);
-    setAutoFetch(savedAutoFetch);
+    // Set defaults - in future versions, load from user preferences in database
+    setCustomRate('');
+    setUseCustomRate(false);
+    setAutoFetch(false);
   };
 
   // Calculate next fetch time (8:00 AM EST daily)
@@ -129,15 +117,12 @@ const DollarRate = () => {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      console.log('Token for dollar rate fetch:', token ? 'Token exists' : 'No token found');
-      
       const response = await fetch('/api/rates/dollar/fetch', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
 
       console.log('Dollar rate fetch response status:', response.status);
@@ -182,18 +167,18 @@ const DollarRate = () => {
   // Handle custom rate changes
   const handleCustomRateChange = (value) => {
     setCustomRate(value);
-    localStorage.setItem('customDollarRate', value);
+    // TODO: Save to user preferences in database
   };
 
   const handleUseCustomRateChange = (checked) => {
     setUseCustomRate(checked);
-    localStorage.setItem('useCustomDollarRate', checked.toString());
+    // TODO: Save to user preferences in database
   };
 
   // Handle auto-fetch setting change
   const handleAutoFetchChange = (checked) => {
     setAutoFetch(checked);
-    localStorage.setItem('dollarRateAutoFetch', checked.toString());
+    // TODO: Save to user preferences in database
   };
 
   // Save custom rate to database
@@ -204,9 +189,9 @@ const DollarRate = () => {
       const response = await fetch('/api/rates/custom', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           rateType: 'dollar',
           customRate: customRate,
@@ -568,7 +553,7 @@ const DollarRate = () => {
 
         <div className="mt-4 bg-yellow-100 p-3 rounded-lg border border-yellow-200">
           <p className="text-sm text-yellow-800">
-            <strong>Database Integration:</strong> Unlike the previous localStorage-only approach, all exchange rates 
+            <strong>Database Integration:</strong> All exchange rates are stored in the database 
             are now saved to the database, ensuring data persistence, team collaboration, and comprehensive historical tracking.
           </p>
         </div>

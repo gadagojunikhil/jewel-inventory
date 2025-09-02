@@ -1,136 +1,115 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Upload, AlertCircle, CheckCircle, Copy, Database, Trash2, BarChart3, RefreshCw, FileText } from 'lucide-react';
-import { storageUtils } from '../../utils/simpleStorage';
+import { Download, AlertCircle, CheckCircle, Database, RefreshCw, FileText, BarChart3 } from 'lucide-react';
+import { apiService } from '../../services/api';
 
 const DataSync = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success' or 'error'
   const [dataStats, setDataStats] = useState({});
-  const [showConfirmClear, setShowConfirmClear] = useState(false);
 
-  // Load data statistics on component mount and when data changes
+  // Load data statistics on component mount
   useEffect(() => {
     updateDataStats();
   }, []);
 
-  const updateDataStats = () => {
-    const data = storageUtils.getAllData();
-    setDataStats({
-      materials: data.materials.length,
-      categories: data.categories.length,
-      jewelryPieces: data.jewelryPieces.length,
-      users: data.users.length,
-      totalItems: data.materials.length + data.categories.length + data.jewelryPieces.length + data.users.length,
-      hasData: storageUtils.hasData()
-    });
+  const updateDataStats = async () => {
+    try {
+      const [materials, categories, jewelry, users, estimates] = await Promise.all([
+        apiService.getMaterials().catch(() => []),
+        apiService.getCategories().catch(() => []),
+        apiService.getJewelryPieces().catch(() => []),
+        apiService.getUsers().catch(() => []),
+        apiService.getEstimates().catch(() => [])
+      ]);
+
+      const stats = {
+        materials: Array.isArray(materials) ? materials.length : 0,
+        categories: Array.isArray(categories) ? categories.length : 0,
+        jewelryPieces: Array.isArray(jewelry) ? jewelry.length : 0,
+        users: Array.isArray(users) ? users.length : 0,
+        estimates: Array.isArray(estimates) ? estimates.length : 0
+      };
+
+      stats.totalItems = stats.materials + stats.categories + stats.jewelryPieces + stats.users + stats.estimates;
+      stats.hasData = stats.totalItems > 0;
+
+      setDataStats(stats);
+    } catch (error) {
+      console.error('Error loading data stats:', error);
+      setDataStats({
+        materials: 0,
+        categories: 0,
+        jewelryPieces: 0,
+        users: 0,
+        estimates: 0,
+        totalItems: 0,
+        hasData: false
+      });
+    }
   };
 
   const showMessage = (msg, type = 'success') => {
     setMessage(msg);
     setMessageType(type);
-    setTimeout(() => setMessage(''), 3000);
-    // Update stats after any data operation
-    setTimeout(() => updateDataStats(), 100);
+    setTimeout(() => setMessage(''), 5000);
   };
 
-  const handleDownloadBackup = () => {
-    try {
-      const success = storageUtils.downloadBackup();
-      if (success) {
-        showMessage('Backup downloaded successfully!');
-      } else {
-        showMessage('Failed to download backup', 'error');
-      }
-    } catch (error) {
-      showMessage('Failed to download backup: ' + error.message, 'error');
-    }
-  };
-
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setIsLoading(true);
-    try {
-      const text = await file.text();
-      const backupData = JSON.parse(text);
-      const result = storageUtils.importBackup(backupData);
-      
-      if (result.success) {
-        showMessage('Backup restored successfully! Please refresh the page.');
-        // Refresh the page after a delay to load the new data
-        setTimeout(() => window.location.reload(), 2000);
-      } else {
-        showMessage('Failed to restore backup: ' + result.error, 'error');
-      }
-    } catch (error) {
-      showMessage('Failed to restore backup: ' + error.message, 'error');
-    } finally {
-      setIsLoading(false);
-      // Clear the file input
-      event.target.value = '';
-    }
-  };
-
-  const handleCopyData = () => {
-    try {
-      const backup = storageUtils.exportBackup();
-      navigator.clipboard.writeText(JSON.stringify(backup, null, 2));
-      showMessage('Data copied to clipboard! You can paste this in another browser.');
-    } catch (error) {
-      showMessage('Failed to copy data: ' + error.message, 'error');
-    }
-  };
-
-  const handlePasteData = async () => {
+  const handleExportData = async () => {
     try {
       setIsLoading(true);
-      const text = await navigator.clipboard.readText();
-      const backupData = JSON.parse(text);
-      const result = storageUtils.importBackup(backupData);
       
-      if (result.success) {
-        showMessage('Data restored successfully! Please refresh the page.');
-        setTimeout(() => window.location.reload(), 2000);
-      } else {
-        showMessage('Failed to restore data: ' + result.error, 'error');
-      }
+      const [materials, categories, jewelry, users, estimates] = await Promise.all([
+        apiService.getMaterials().catch(() => []),
+        apiService.getCategories().catch(() => []),
+        apiService.getJewelryPieces().catch(() => []),
+        apiService.getUsers().catch(() => []),
+        apiService.getEstimates().catch(() => [])
+      ]);
+
+      const exportData = {
+        timestamp: new Date().toISOString(),
+        version: '1.0',
+        data: {
+          materials: materials || [],
+          categories: categories || [],
+          jewelryPieces: jewelry || [],
+          users: users || [],
+          estimates: estimates || []
+        }
+      };
+
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `jewelry-inventory-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showMessage('Data exported successfully!');
     } catch (error) {
-      showMessage('Failed to paste data: ' + error.message, 'error');
+      console.error('Export error:', error);
+      showMessage('Failed to export data: ' + error.message, 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClearAllData = () => {
-    if (!showConfirmClear) {
-      setShowConfirmClear(true);
-      return;
-    }
-
+  const refreshData = async () => {
+    setIsLoading(true);
     try {
-      storageUtils.clearAll();
-      setShowConfirmClear(false);
-      showMessage('All data cleared successfully! The system has been reset.');
-      updateDataStats();
+      await updateDataStats();
+      showMessage('Data statistics refreshed successfully!');
     } catch (error) {
-      showMessage('Failed to clear data: ' + error.message, 'error');
+      showMessage('Failed to refresh data: ' + error.message, 'error');
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const handleCancelClear = () => {
-    setShowConfirmClear(false);
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   return (
@@ -138,14 +117,15 @@ const DataSync = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center">
           <Database className="w-7 h-7 mr-2 text-blue-600" />
-          Data Synchronization
+          Database Overview
         </h1>
         <button
-          onClick={updateDataStats}
-          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center text-sm"
+          onClick={refreshData}
+          disabled={isLoading}
+          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center text-sm disabled:opacity-50"
         >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh Stats
+          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading ? 'Refreshing...' : 'Refresh Stats'}
         </button>
       </div>
       
@@ -168,10 +148,10 @@ const DataSync = () => {
       <div className="mb-6 bg-white p-6 rounded-lg shadow border">
         <h2 className="text-lg font-semibold mb-4 flex items-center">
           <BarChart3 className="w-5 h-5 mr-2 text-blue-500" />
-          Current Data Overview
+          Database Overview
         </h2>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
             <div className="text-2xl font-bold text-blue-600">{dataStats.jewelryPieces || 0}</div>
             <div className="text-sm text-blue-800">Jewelry Pieces</div>
@@ -188,192 +168,107 @@ const DataSync = () => {
             <div className="text-2xl font-bold text-orange-600">{dataStats.users || 0}</div>
             <div className="text-sm text-orange-800">Users</div>
           </div>
+          <div className="text-center p-4 bg-indigo-50 rounded-lg">
+            <div className="text-2xl font-bold text-indigo-600">{dataStats.estimates || 0}</div>
+            <div className="text-sm text-indigo-800">Estimates</div>
+          </div>
         </div>
 
         <div className="mt-4 p-3 bg-gray-50 rounded-lg text-center">
           <div className="text-lg font-semibold text-gray-700">
-            Total Items: {dataStats.totalItems || 0}
+            Total Records: {dataStats.totalItems || 0}
           </div>
           <div className="text-sm text-gray-600">
-            {dataStats.hasData ? 'System contains data' : 'No data found - system is empty'}
+            {dataStats.hasData ? 'Database contains data' : 'Database is empty'}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Local Backup Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Database Export Section */}
         <div className="bg-white p-6 rounded-lg shadow border">
           <h2 className="text-lg font-semibold mb-4 flex items-center">
             <FileText className="w-5 h-5 mr-2 text-blue-500" />
-            File Backup
+            Database Export
           </h2>
           <p className="text-gray-600 mb-4">
-            Download or restore your data to sync between different access methods (localhost vs IP address).
+            Export all your database records to a JSON file for backup or analysis purposes.
           </p>
           
           <div className="space-y-3">
             <button
-              onClick={handleDownloadBackup}
-              disabled={!dataStats.hasData}
+              onClick={handleExportData}
+              disabled={!dataStats.hasData || isLoading}
               className="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-4 h-4 mr-2" />
-              Download Backup File
+              {isLoading ? 'Exporting...' : 'Export Database'}
               {!dataStats.hasData && <span className="ml-2 text-xs">(No data)</span>}
             </button>
-            
-            <div>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="backup-upload"
-                disabled={isLoading}
-              />
-              <label
-                htmlFor="backup-upload"
-                className={`w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center justify-center cursor-pointer ${
-                  isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                {isLoading ? 'Restoring...' : 'Restore from File'}
-              </label>
+          </div>
+        </div>
+
+        {/* Database Info Section */}
+        <div className="bg-white p-6 rounded-lg shadow border">
+          <h2 className="text-lg font-semibold mb-4 flex items-center">
+            <Database className="w-5 h-5 mr-2 text-green-500" />
+            Database Information
+          </h2>
+          <p className="text-gray-600 mb-4">
+            This application now uses a PostgreSQL database for secure, centralized data storage.
+          </p>
+          
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Storage Type:</span>
+              <span className="font-medium">PostgreSQL Database</span>
             </div>
-          </div>
-        </div>
-
-        {/* Clipboard Sync Section */}
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <Copy className="w-5 h-5 mr-2 text-purple-500" />
-            Clipboard Sync
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Copy your data to clipboard and paste it in another browser or device for quick sync.
-          </p>
-          
-          <div className="space-y-3">
-            <button
-              onClick={handleCopyData}
-              disabled={!dataStats.hasData}
-              className="w-full bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Copy className="w-4 h-4 mr-2" />
-              Copy Data to Clipboard
-              {!dataStats.hasData && <span className="ml-2 text-xs">(No data)</span>}
-            </button>
-            
-            <button
-              onClick={handlePasteData}
-              disabled={isLoading}
-              className="w-full bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center justify-center disabled:opacity-50"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {isLoading ? 'Pasting...' : 'Paste Data from Clipboard'}
-            </button>
-          </div>
-        </div>
-
-        {/* Data Management Section */}
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <Database className="w-5 h-5 mr-2 text-red-500" />
-            Data Management
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Manage your local data storage. Use with caution as these operations cannot be undone.
-          </p>
-          
-          <div className="space-y-3">
-            {!showConfirmClear ? (
-              <button
-                onClick={handleClearAllData}
-                disabled={!dataStats.hasData}
-                className="w-full bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Clear All Data
-                {!dataStats.hasData && <span className="ml-2 text-xs">(No data)</span>}
-              </button>
-            ) : (
-              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                <p className="text-red-800 text-sm mb-3 font-medium">
-                  ⚠️ Are you sure you want to delete ALL data? This action cannot be undone!
-                </p>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={handleClearAllData}
-                    className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700"
-                  >
-                    Yes, Delete All
-                  </button>
-                  <button
-                    onClick={handleCancelClear}
-                    className="flex-1 bg-gray-500 text-white px-3 py-2 rounded text-sm hover:bg-gray-600"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">Authentication:</span>
+              <span className="font-medium">Session-based</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Data Persistence:</span>
+              <span className="font-medium">Server-side</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Backup Method:</span>
+              <span className="font-medium">Database Export</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border">
-        <h3 className="font-semibold text-gray-800 mb-3">How to sync data between localhost and IP access:</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Information */}
+      <div className="mt-6 bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-lg border">
+        <h3 className="font-semibold text-gray-800 mb-3">Database-First Architecture</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-medium text-blue-700 mb-2">Method 1: File Backup</h4>
-            <ol className="list-decimal list-inside text-blue-700 space-y-1 text-sm">
-              <li>Add your data while accessing via one method (localhost or IP)</li>
-              <li>Download a backup file from this page</li>
-              <li>Switch to the other access method (IP or localhost)</li>
-              <li>Upload the backup file to restore your data</li>
-            </ol>
+            <h4 className="font-medium text-blue-700 mb-2">Benefits</h4>
+            <ul className="list-disc list-inside text-blue-700 space-y-1 text-sm">
+              <li>Centralized data storage across all devices</li>
+              <li>No browser storage dependencies</li>
+              <li>Secure session-based authentication</li>
+              <li>Real-time data synchronization</li>
+              <li>Professional database management</li>
+            </ul>
           </div>
           <div>
-            <h4 className="font-medium text-purple-700 mb-2">Method 2: Clipboard Sync</h4>
-            <ol className="list-decimal list-inside text-purple-700 space-y-1 text-sm">
-              <li>Add your data while accessing via one method</li>
-              <li>Copy data to clipboard using the "Copy Data" button</li>
-              <li>Switch to the other access method or device</li>
-              <li>Paste the data using "Paste Data" button</li>
-            </ol>
-          </div>
-          <div>
-            <h4 className="font-medium text-green-700 mb-2">Best Practices</h4>
+            <h4 className="font-medium text-green-700 mb-2">Data Management</h4>
             <ul className="list-disc list-inside text-green-700 space-y-1 text-sm">
-              <li>Always backup before major changes</li>
-              <li>Verify data stats after sync operations</li>
-              <li>Use clipboard method for quick transfers</li>
-              <li>Use file method for long-term backups</li>
+              <li>All data is stored in PostgreSQL database</li>
+              <li>Export functionality for backup purposes</li>
+              <li>Session-based authentication (no tokens)</li>
+              <li>Automatic data validation and integrity</li>
+              <li>Consistent data across all access methods</li>
             </ul>
           </div>
         </div>
         
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-blue-100 p-3 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>File Backup:</strong> Creates a timestamped JSON file that you can save permanently. 
-              Best for creating backups before major changes or sharing data with others.
-            </p>
-          </div>
-          <div className="bg-purple-100 p-3 rounded-lg">
-            <p className="text-sm text-purple-800">
-              <strong>Clipboard Sync:</strong> Faster for quick syncing between browser tabs or windows. 
-              Perfect when you need to transfer data immediately without downloading files.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 bg-yellow-100 p-3 rounded-lg border border-yellow-200">
-          <p className="text-sm text-yellow-800">
-            <strong>Important:</strong> Both localhost (127.0.0.1) and IP address access use separate local storage. 
-            Use these sync tools to keep your data consistent across different access methods.
+        <div className="mt-4 bg-blue-100 p-3 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> This application stores all data securely in the database. 
+            in the database and synchronized automatically across all devices and browsers when you log in.
           </p>
         </div>
       </div>

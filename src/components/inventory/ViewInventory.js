@@ -75,11 +75,7 @@ const ViewInventory = ({ onItemCodeClick, onEditItemClick }) => {
 
   const loadInventoryData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.warn('No token found for inventory data');
-        return;
-      }
+      
 
       // Build query parameters
       const params = new URLSearchParams({
@@ -98,8 +94,8 @@ const ViewInventory = ({ onItemCodeClick, onEditItemClick }) => {
       }
 
       const response = await fetch(`/api/inventory?${params}`, {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -125,12 +121,12 @@ const ViewInventory = ({ onItemCodeClick, onEditItemClick }) => {
 
   const loadCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      
+      
 
       const response = await fetch('/api/categories', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -146,12 +142,12 @@ const ViewInventory = ({ onItemCodeClick, onEditItemClick }) => {
 
   const loadVendors = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      
+      
 
       const response = await fetch('/api/vendors', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -167,12 +163,12 @@ const ViewInventory = ({ onItemCodeClick, onEditItemClick }) => {
 
   const loadMaterials = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      
+      
 
       const response = await fetch('/api/materials', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -376,7 +372,7 @@ const ViewInventory = ({ onItemCodeClick, onEditItemClick }) => {
     setConfirmUpdateModalOpen(false);
     
     try {
-      const token = localStorage.getItem('token');
+      
       
       // RECALCULATE ALL VALUES PROPERLY
       const grossWeight = parseFloat(editFormData.gross_weight) || 0;
@@ -479,8 +475,8 @@ const ViewInventory = ({ onItemCodeClick, onEditItemClick }) => {
 
       const response = await fetch(`/api/inventory/${selectedItem.id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(updateData)
@@ -509,11 +505,11 @@ const ViewInventory = ({ onItemCodeClick, onEditItemClick }) => {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      
       const response = await fetch(`/api/inventory/${selectedItem.id}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

@@ -30,10 +30,9 @@ const UploadInventory = () => {
   const [materials, setMaterials] = useState([]);
   const fileInputRef = useRef(null);
 
-  // Load data from localStorage
   useEffect(() => {
     // Load vendor profiles
-    const savedProfiles = localStorage.getItem('vendorProfiles');
+    const savedProfiles = 
     if (savedProfiles) {
       const profiles = JSON.parse(savedProfiles);
       setVendorProfiles(profiles);
@@ -70,17 +69,17 @@ const UploadInventory = () => {
       };
       setVendorProfiles(defaultProfiles);
       setCurrentProfile(defaultProfiles.standard);
-      localStorage.setItem('vendorProfiles', JSON.stringify(defaultProfiles));
+      
     }
 
     // Load categories
-    const savedCategories = localStorage.getItem('jewelryCategories');
+    const savedCategories = 
     if (savedCategories) {
       setCategories(JSON.parse(savedCategories));
     }
 
     // Load materials
-    const savedMaterials = localStorage.getItem('jewelryMaterials');
+    const savedMaterials = 
     if (savedMaterials) {
       setMaterials(JSON.parse(savedMaterials));
     }
@@ -444,7 +443,7 @@ const UploadInventory = () => {
     if (item.salePrice < 0) errors.push('Sale Price cannot be negative');
     
     // Check for duplicate item codes
-    const existingItems = JSON.parse(localStorage.getItem('jewelryPieces') || '[]');
+    const existingItems = JSON.parse(
     if (existingItems.some(existing => existing.code === item.itemCode)) {
       errors.push(`Duplicate Item Code: ${item.itemCode} already exists`);
     }
@@ -529,7 +528,7 @@ const UploadInventory = () => {
     }
     
     // Get existing jewelry pieces
-    const existingJewelry = JSON.parse(localStorage.getItem('jewelryPieces') || '[]');
+    const existingJewelry = JSON.parse(
     
     // Add new items with proper IDs
     const maxId = existingJewelry.length > 0 
@@ -543,9 +542,8 @@ const UploadInventory = () => {
       status: 'In Stock'
     }));
     
-    // Save to localStorage
    /*  const updatedJewelry = [...existingJewelry, ...newItems];
-    localStorage.setItem('jewelryPieces', JSON.stringify(updatedJewelry));
+    
     
     alert(`Successfully added ${newItems.length} items to inventory!`);
     

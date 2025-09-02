@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, 
-  Plus, 
   Search, 
   Edit, 
   Trash2, 
@@ -17,6 +16,7 @@ import {
   Unlock,
   Info
 } from 'lucide-react';
+import { apiService } from '../../services/api';
 import usePermissions from '../../hooks/usePermissions';
 import PageIdentifier from '../shared/PageIdentifier';
 import SCREEN_IDS from '../../utils/screenIds';
@@ -28,7 +28,6 @@ const UserManagement = () => {
   const canCreate = hasPermission('user-management', 'create');
   const canEdit = hasPermission('user-management', 'edit');
   const canDelete = hasPermission('user-management', 'delete');
-  const canView = hasPermission('user-management', 'view');
   const permissionLevel = getPermissionLevel('user-management');
   
   const [users, setUsers] = useState([]);
@@ -51,46 +50,22 @@ const UserManagement = () => {
     useDefault: true
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordRequirements, setPasswordRequirements] = useState([]);
 
   useEffect(() => {
     fetchUsers();
-    fetchPasswordRequirements();
   }, []);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-      } else {
-        setError('Failed to fetch users');
-      }
+      const data = await apiService.getUsers();
+      setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching users:', error);
       setError('Network error while fetching users');
+      setUsers([]); // Ensure users is always an array
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchPasswordRequirements = async () => {
-    try {
-      const response = await fetch('/api/auth/password-requirements');
-      if (response.ok) {
-        const data = await response.json();
-        setPasswordRequirements(data.requirements);
-      }
-    } catch (error) {
-      console.error('Failed to fetch password requirements:', error);
     }
   };
 
@@ -118,65 +93,31 @@ const UserManagement = () => {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(newUser)
+      const createdUser = await apiService.createUser(newUser);
+      setUsers([...users, createdUser]);
+      setShowCreateForm(false);
+      setNewUser({
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        role: 'user'
       });
-
-      if (response.ok) {
-        const createdUser = await response.json();
-        setUsers([...users, createdUser]);
-        setShowCreateForm(false);
-        setNewUser({
-          firstName: '',
-          lastName: '',
-          username: '',
-          email: '',
-          role: 'user'
-        });
-        setError('');
-        
-        // Show success message with default password
-        alert(`User created successfully!\nDefault password: ${createdUser.defaultPassword}\nUser must change password on first login.`);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to create user');
-      }
     } catch (error) {
       console.error('Error creating user:', error);
-      setError('Network error while creating user');
+      setError('Failed to create user: ' + error.message);
     }
   };
 
   const handleUpdateUser = async (userId, updates) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updates)
-      });
-
-      if (response.ok) {
-        const updatedUser = await response.json();
-        setUsers(users.map(user => user.id === userId ? updatedUser : user));
-        setEditingUser(null);
-        setError('');
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to update user');
-      }
+      const updatedUser = await apiService.updateUser(userId, updates);
+      setUsers(users.map(user => user.id === userId ? updatedUser : user));
+      setEditingUser(null);
+      setError('');
     } catch (error) {
       console.error('Error updating user:', error);
-      setError('Network error while updating user');
+      setError('Failed to update user: ' + error.message);
     }
   };
 
@@ -186,38 +127,25 @@ const UserManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        setUsers(users.filter(user => user.id !== userId));
-        setError('');
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to delete user');
-      }
+      await apiService.deleteUser(userId);
+      setUsers(users.filter(user => user.id !== userId));
+      setError('');
     } catch (error) {
       console.error('Error deleting user:', error);
-      setError('Network error while deleting user');
+      setError('Failed to delete user: ' + error.message);
     }
   };
 
   const handleResetPassword = async (userId) => {
     try {
-      const token = localStorage.getItem('token');
       const body = resetPasswordData.useDefault ? {} : { newPassword: resetPasswordData.newPassword };
       
       const response = await fetch(`/api/users/${userId}/reset-password`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(body)
       });
 

@@ -44,16 +44,13 @@ const MaterialManagement = () => {
         setLoading(true);
         setError(null);
         
-        let token = localStorage.getItem('token');
-        if (!token) {
-          token = 'dummy-token';
-          localStorage.setItem('token', token);
-        }
+        
 
         const response = await fetch('/api/materials', {
-          headers: {
+          credentials: 'include',
+        headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            
           }
         });
         
@@ -76,17 +73,14 @@ const MaterialManagement = () => {
 
   // API functions
   const apiAddMaterial = async (material) => {
-    let token = localStorage.getItem('token');
-    if (!token) {
-      token = 'dummy-token';
-      localStorage.setItem('token', token);
-    }
+    
 
     const response = await fetch('/api/materials', {
       method: 'POST',
-      headers: {
+      credentials: 'include',
+        headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        
       },
       body: JSON.stringify(material)
     });
@@ -101,17 +95,14 @@ const MaterialManagement = () => {
   };
 
   const apiUpdateMaterial = async (id, material) => {
-    let token = localStorage.getItem('token');
-    if (!token) {
-      token = 'dummy-token';
-      localStorage.setItem('token', token);
-    }
+    
 
     const response = await fetch(`/api/materials/${id}`, {
       method: 'PUT',
-      headers: {
+      credentials: 'include',
+        headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        
       },
       body: JSON.stringify(material)
     });
@@ -126,17 +117,14 @@ const MaterialManagement = () => {
   };
 
   const apiDeleteMaterial = async (id) => {
-    let token = localStorage.getItem('token');
-    if (!token) {
-      token = 'dummy-token';
-      localStorage.setItem('token', token);
-    }
+    
 
     const response = await fetch(`/api/materials/${id}`, {
       method: 'DELETE',
-      headers: {
+      credentials: 'include',
+        headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        
       }
     });
     
