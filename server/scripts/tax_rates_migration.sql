@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS tax_rates (
+  id SERIAL PRIMARY KEY,
+  gst_percentage NUMERIC(5,2),
+  customs_duty NUMERIC(5,2),
+  state_tax NUMERIC(5,2),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

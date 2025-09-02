@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Save, X, Calendar, Hash, Building2, FileText, Scale, Gem, DollarSign, Award, CheckCircle } from 'lucide-react';
 import usePermissions from '../../hooks/usePermissions';
+import PageIdentifier from '../shared/PageIdentifier';
+import SCREEN_IDS from '../../utils/screenIds';
 
 const AddInventory = () => {
   const { hasPermission, getPermissionLevel } = usePermissions();
@@ -417,7 +419,8 @@ const AddInventory = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 pb-12">
+      <PageIdentifier pageId={SCREEN_IDS?.INVENTORY?.ADD_ITEM || 'INV-002'} pageName="Add Inventory" />
       <h2 className="text-2xl font-bold mb-6">Add New Inventory</h2>
       
       <div className="bg-white p-6 rounded-lg shadow-md">

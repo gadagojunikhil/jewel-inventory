@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Shield, Check, X, Settings, Info, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
+import PageIdentifier from '../shared/PageIdentifier';
+import SCREEN_IDS from '../../utils/screenIds';
 
 const PermissionsManagement = () => {
   const { user } = useAuth();
@@ -520,7 +522,8 @@ const PermissionsManagement = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 pb-12">
+      <PageIdentifier pageId={SCREEN_IDS?.ADMINISTRATION?.PERMISSIONS || 'ADM-002'} pageName="Permissions Management" />
       <div className="mb-6">
         <div className="flex items-center space-x-3 mb-4">
           <Shield className="h-8 w-8 text-blue-600" />

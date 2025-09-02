@@ -1,9 +1,12 @@
 import React from 'react';
 import { Gem, Package, DollarSign, Users } from 'lucide-react';
+import PageIdentifier from './PageIdentifier';
+import SCREEN_IDS from '../../utils/screenIds';
 
 const Dashboard = ({ materials = [], jewelryPieces = [], jewelryCategories = [], users = [] }) => {
   return (
-    <div className="p-6">
+    <div className="p-6 pb-12">
+      <PageIdentifier pageId={SCREEN_IDS?.DASHBOARD?.MAIN || 'DASH-001'} pageName="Main Dashboard" />
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-blue-50 p-6 rounded-lg">
           <div className="flex items-center justify-between">

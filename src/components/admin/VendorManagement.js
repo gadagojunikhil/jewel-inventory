@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Search, Phone, Mail, Shield } from 'lucide-react';
 import usePermissions from '../../hooks/usePermissions';
+import PageIdentifier from '../shared/PageIdentifier';
+import SCREEN_IDS from '../../utils/screenIds';
 
 const VendorManagement = () => {
   const { hasPermission, getPermissionLevel } = usePermissions();
@@ -246,7 +248,8 @@ const VendorManagement = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 pb-12">
+      <PageIdentifier pageId={SCREEN_IDS?.VENDORS?.MAIN || 'VEN-001'} pageName="Vendor Management" />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold">Vendor Details</h2>

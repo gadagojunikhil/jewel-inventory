@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Package, ChevronDown, ChevronRight, Gem, Award } from 'lucide-react';
 import usePermissions from '../../hooks/usePermissions';
+import PageIdentifier from '../shared/PageIdentifier';
+import SCREEN_IDS from '../../utils/screenIds';
 
-const CategoryManagement = ({
-  jewelryCategories = [],
-  setJewelryCategories = () => {}
-}) => {
+const CategoryManagement = () => {
   const { hasPermission, getPermissionLevel } = usePermissions();
   
   // Permission checks for category-management page
@@ -38,6 +37,38 @@ const CategoryManagement = ({
     parentId: null,
     type: 'parent'
   });
+  const [jewelryCategories, setJewelryCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoading(true);
+      try {
+        const token = 'YOUR_AUTH_TOKEN'; // Replace with context or prop for token
+        const response = await fetch('/api/categories', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setJewelryCategories(data);
+        } else {
+          console.error('Failed to fetch categories');
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  if (loading) {
+    return <div>Loading categories...</div>;
+  }
 
   // Get parent categories (Jewelry Categories)
   const getParentCategories = () => {
@@ -414,7 +445,8 @@ const CategoryManagement = ({
   const parentCategories = getParentCategories();
 
   return (
-    <div className="p-6">
+    <div className="p-6 pb-12">
+      <PageIdentifier pageId={SCREEN_IDS?.CATEGORIES?.MAIN || 'CAT-001'} pageName="Category Management" />
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Product Categories</h2>
         <div className="flex space-x-3">

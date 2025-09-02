@@ -90,6 +90,20 @@ const usePermissions = () => {
         user: { access: false, level: 'none' },
         guest: { access: false, level: 'none' }
       }[role] || { access: false, level: 'none' },
+      'gold-rate': {
+        super_admin: { access: true, level: 'full' },
+        admin: { access: true, level: 'full' },
+        manager: { access: true, level: 'view' },
+        user: { access: false, level: 'none' },
+        guest: { access: false, level: 'none' }
+      }[role] || { access: false, level: 'none' },
+      'manual-rate-entry': {
+        super_admin: { access: true, level: 'full' },
+        admin: { access: true, level: 'full' },
+        manager: { access: false, level: 'none' },
+        user: { access: false, level: 'none' },
+        guest: { access: false, level: 'none' }
+      }[role] || { access: false, level: 'none' },
       'data-sync': {
         super_admin: { access: true, level: 'full' },
         admin: { access: true, level: 'full' },

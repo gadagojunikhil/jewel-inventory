@@ -18,6 +18,8 @@ import {
   Info
 } from 'lucide-react';
 import usePermissions from '../../hooks/usePermissions';
+import PageIdentifier from '../shared/PageIdentifier';
+import SCREEN_IDS from '../../utils/screenIds';
 
 const UserManagement = () => {
   const { hasPermission, getPermissionLevel } = usePermissions();
@@ -277,7 +279,8 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-sm">
+    <div className="p-6 bg-white rounded-lg shadow-sm pb-12">
+      <PageIdentifier pageId={SCREEN_IDS?.ADMINISTRATION?.USER_MANAGEMENT || 'ADM-001'} pageName="User Management" />
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center">

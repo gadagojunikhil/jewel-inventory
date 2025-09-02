@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Gem, RefreshCw, TrendingUp, TrendingDown, Calendar, AlertCircle, CheckCircle, Globe, Clock, Database, History } from 'lucide-react';
+import PageIdentifier from '../shared/PageIdentifier';
+import SCREEN_IDS from '../../utils/screenIds';
 
 const GoldRate = () => {
   const [goldData, setGoldData] = useState(null);
@@ -184,7 +186,8 @@ const GoldRate = () => {
   const trend22k = goldData && yesterdayRate ? getTrend(goldData.gold_22k_per_10g, yesterdayRate.gold_22k_per_10g) : null;
 
   return (
-    <div className="p-6">
+    <div className="p-6 pb-12">
+      <PageIdentifier pageId={SCREEN_IDS?.RATES?.GOLD_RATE || 'RATE-001'} pageName="Gold Rate Management" />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center">
           <Gem className="w-7 h-7 mr-2 text-yellow-600" />

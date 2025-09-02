@@ -61,6 +61,7 @@ const Sidebar = ({ currentModule, handleMenuClick, sidebarOpen, setSidebarOpen }
       submenu: [
         { id: 'gold-rate', title: 'Gold Rate', icon: Gem },
         { id: 'dollar-rate', title: 'Dollar Rate', icon: DollarSign },
+        { id: 'manual-rate-entry', title: 'Manual Rate Entry', icon: Calculator },
         { id: 'data-sync', title: 'Data Sync', icon: Settings }
       ].filter(item => hasAccess(item.id))
     }

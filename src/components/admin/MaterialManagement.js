@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Gem, Search } from 'lucide-react';
 import usePermissions from '../../hooks/usePermissions';
+import PageIdentifier from '../shared/PageIdentifier';
+import SCREEN_IDS from '../../utils/screenIds';
 
 const MaterialManagement = () => {
   const { hasPermission, getPermissionLevel } = usePermissions();
@@ -321,7 +323,8 @@ const MaterialManagement = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 pb-12">
+      <PageIdentifier pageId={SCREEN_IDS?.MATERIALS?.MAIN || 'MAT-001'} pageName="Material Management" />
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Gemstone & Materials</h2>
         <button

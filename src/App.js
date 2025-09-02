@@ -29,10 +29,13 @@ import VendorStock from './components/reports/VendorStock';
 import DataSync from './components/utilities/DataSync';
 import DollarRate from './components/utilities/DollarRate';
 import GoldRate from './components/utilities/GoldRate';
+import ManualRateEntry from './components/utilities/ManualRateEntry';
 
 // Shared Components
 import Sidebar from './components/shared/Sidebar';
 import { Dashboard } from './components/shared/Dashboard';
+import PageIdentifier from './components/shared/PageIdentifier';
+import SCREEN_IDS from './utils/screenIds';
 
 // Icons
 import { Menu, LogOut, User } from 'lucide-react';
@@ -126,6 +129,8 @@ function AppContent() {
         return <GoldRate />;
       case 'dollar-rate':
         return <DollarRate />;
+      case 'manual-rate-entry':
+        return <ManualRateEntry />;
       case 'data-sync':
         return <DataSync />;
       // case 'upload-jewelry':
@@ -187,7 +192,7 @@ function AppContent() {
         </div>
         
         {/* Main Content Area */}
-        <main>
+        <main className="pb-8">
           {renderContent()}
         </main>
       </div>

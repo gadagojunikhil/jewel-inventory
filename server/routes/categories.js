@@ -6,6 +6,18 @@ const { auth, adminAuth, managerAuth } = require('../middleware/auth');
 // Get all categories
 router.get('/', async (req, res) => {
   try {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization header missing' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Token missing' });
+    }
+
+    // Validate token here if needed
+
     const result = await pool.query(
       'SELECT * FROM categories WHERE is_active = true ORDER BY name'
     );
