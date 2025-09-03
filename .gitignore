@@ -53,3 +53,9 @@ coverage/
 # Build directories
 build/
 dist/
+# Custom ignores
+server/node_modules/
+node_modules/
+build/
+.DS_Store
+

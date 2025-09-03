@@ -78,7 +78,7 @@ A comprehensive full-stack jewelry inventory management application built with R
 
 ### Security Features
 - **🔐 Authentication & Authorization**
-  - JWT-based authentication with secure token management
+  - JWT-based authentication with secure token management (tokens stored in browser local storage)
   - **Granular permission system** with customizable access levels:
     - 🚫 **No Access**: Complete restriction
     - 👁️ **View Only**: Read-only access
@@ -92,11 +92,12 @@ A comprehensive full-stack jewelry inventory management application built with R
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React 18.x** - Modern UI library with hooks
-- **React Router** - Client-side routing
-- **Tailwind CSS** - Utility-first CSS framework
-- **Lucide React** - Modern icon library
-- **JavaScript ES6+** - Modern JavaScript features
+**React 18.x** - Modern UI library with hooks
+**React Router** - Client-side routing
+**Tailwind CSS** - Utility-first CSS framework
+**Lucide React** - Modern icon library
+**JavaScript ES6+** - Modern JavaScript features
+**Local Storage** - Used only for storing authentication tokens (not business data)
 
 ### Backend
 - **Node.js** - JavaScript runtime
@@ -174,7 +175,6 @@ jewelry-inventory-manager/
 │   │   ├── useApiData.js                # API data fetching hook
 │   │   ├── useDataSync.js               # Data synchronization hook
 │   │   ├── useJewelryCalculations.js    # Cost calculation utilities
-│   │   ├── useLocalStorage.js           # Local storage management
 │   │   └── useSearch.js                 # Search and filtering logic
 │   ├── services/                # API services
 │   │   ├── api.js                       # Main API service with all endpoints
@@ -185,8 +185,6 @@ jewelry-inventory-manager/
 │       ├── constants.js                 # Application constants
 │       ├── dataManager.js               # Data management utilities
 │       ├── exportHelpers.js             # Data export functions
-│       ├── simpleStorage.js             # Simple storage utilities
-│       ├── storageSync.js               # Storage synchronization
 │       └── validation.js                # Input validation functions
 ├── server/                      # Backend Node.js application
 │   ├── server.js               # Express server entry point
